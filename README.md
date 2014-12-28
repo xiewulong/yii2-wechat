@@ -1,4 +1,4 @@
 yii2-wechat
 ===========
 
-weixin extension of yii2
+wechat extension of yii2
