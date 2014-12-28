@@ -1,0 +1,24 @@
+{
+	"name": "xiewulong/yii2-wechat",
+	"description": "wechat api",
+	"keywords": ["yii2", "xiewulong", "wechat", "weixin"],
+	"type": "yii2-extension",
+	"license": "MIT",
+	"support": {
+		"issues": "https://github.com/xiewulong/yii2-wechat/issues",
+		"wiki": "https://github.com/xiewulong/yii2-wechat/wiki",
+		"source": "https://github.com/xiewulong/yii2-wechat"
+	},
+	"authors": [
+		{
+			"name": "xiewulong",
+			"email": "xiewulong@vip.qq.com"
+		}
+    ],
+    "require": {
+        "yiisoft/yii2": "*"
+    },
+	"autoload": {
+		"psr-4": {"yii\\wechat\\": ""}
+	}
+}
