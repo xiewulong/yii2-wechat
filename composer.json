@@ -1,6 +1,6 @@
 {
 	"name": "xiewulong/yii2-wechat",
-	"description": "wechat api",
+	"description": "wechat(weixin) api",
 	"keywords": ["yii2", "xiewulong", "wechat", "weixin"],
 	"type": "yii2-extension",
 	"license": "MIT",

@@ -1,4 +1,4 @@
-CREATE TABLE `tbpre_wxapp` (
+CREATE TABLE `tbpre_wechat` (
 	`appid` VARCHAR(50) NOT NULL,
 	`access_token` TEXT NOT NULL,
 	`expires_in` BIGINT(20) UNSIGNED NOT NULL,
