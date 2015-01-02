@@ -6,10 +6,10 @@ use Yii;
 use yii\db\ActiveRecord;
 use yii\behaviors\TimestampBehavior;
 
-class Wxapp extends ActiveRecord{
+class Wechat extends ActiveRecord{
 
 	public static function tableName(){
-		return '{{%wxapp}}';
+		return '{{%wechat}}';
 	}
 
 	public function behaviors(){

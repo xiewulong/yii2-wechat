@@ -13,7 +13,7 @@ namespace yii\wechat;
 
 use yii\base\ErrorException;
 use yii\helpers\Json;
-use yii\wechat\models\Wxapp;
+use yii\wechat\models\Wechat;
 
 class Wechat{
 
@@ -36,13 +36,13 @@ class Wechat{
 	private $messages = false;
 
 	/**
-	 * 获取accesstoken
+	 * 验证
 	 * @method getAccessToken
 	 * @since 0.0.1
 	 * @return {string}
-	 * @example Yii::$app->sms->send();
+	 * @example Yii::$app->wechat->check();
 	 */
-	public function getAccessToken(){
+	public function check(){
 		
 	}
 
@@ -51,7 +51,6 @@ class Wechat{
 	 * @method getAccessToken
 	 * @since 0.0.1
 	 * @return {string}
-	 * @example Yii::$app->sms->send();
 	 */
 	private function getAccessToken(){
 		if(empty($this->appid) || empty($this->appsecret)){
@@ -116,7 +115,7 @@ class Wechat{
 	 * @param {string} $url 请求地址
 	 * @param {array|string} [$data=null] post数据
 	 * @param {string} [$useragent=null] 模拟浏览器用户代理信息
-	 * @return {string} 返回获取的数据
+	 * @return {string}
 	 */
 	private function curl($url, $data = null, $useragent = null){
 		$curl = curl_init();
