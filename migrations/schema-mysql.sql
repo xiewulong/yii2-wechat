@@ -3,7 +3,7 @@ CREATE TABLE `tbpre_wechat` (
 	`appsecret` VARCHAR(50) NOT NULL COMMENT 'AppSecret(应用密钥)',
 	`token` VARCHAR(50) NOT NULL COMMENT 'Token(令牌)',
 	`aeskey` VARCHAR(50) NULL DEFAULT NULL COMMENT 'EncodingAESKey(消息加解密密钥)',
-	`mode` TINYINT(1) UNSIGNED NOT NULL DEFAULT '1' COMMENT '消息加解密模式: 0明文模式, 1兼容模式(默认), 2安全模式',
+	`mode` TINYINT(1) UNSIGNED NOT NULL DEFAULT '1' COMMENT '消息加解密模式: 0明文模式, 1兼容模式, 2安全模式',
 	`access_token` TEXT NULL COMMENT 'access_token',
 	`expires_in` BIGINT(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT 'access_token有效时长(秒)',
 	`created_at` BIGINT(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT '创建时间',
@@ -11,7 +11,7 @@ CREATE TABLE `tbpre_wechat` (
 	PRIMARY KEY (`appid`),
 	UNIQUE INDEX `appid` (`appid`)
 )
-COMMENT='微信app信息'
+COMMENT='微信app'
 COLLATE='utf8_general_ci'
 ENGINE=InnoDB;
 
