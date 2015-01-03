@@ -7,9 +7,11 @@ use yii\web\Controller;
 
 class DefaultController extends Controller{
 	
-	public function actionIndex(){
-		echo 1;
-		echo $this->module->param;
+	public function actionIndex($appid){
+		if($echostr = Yii::$app->request->get('echostr')){
+			return $this->module->checkSignature($appid) ? $echostr : false;
+		}
+
 	}
 
 }

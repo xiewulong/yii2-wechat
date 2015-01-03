@@ -15,21 +15,18 @@ use yii\base\ErrorException;
 use yii\helpers\Json;
 use yii\wechat\models\Wechat;
 
-class Wechat{
-
-	//appid
-	public $appid;
-
-	//appsecret
-	public $appsecret;
+class WechatSdk{
 
 	//微信api地址
 	private $api = 'https://api.weixin.qq.com/cgi-bin';
 
-	//access token
+	//wechat app
+	private $wechat;
+
+	//access_token
 	private $accesstoken = false;
 
-	//access token过期时间
+	//access_token过期时间
 	private $expired_at = 0;
 
 	//提示信息
@@ -39,11 +36,15 @@ class Wechat{
 	 * 验证
 	 * @method getAccessToken
 	 * @since 0.0.1
-	 * @return {string}
-	 * @example Yii::$app->wechat->check();
+	 * @return {object}
+	 * @example Yii::$app->wechat->setAppid();
 	 */
-	public function check(){
-		
+	public function setAppid($appid){
+		if(!$this->wechat = Wechat::findOne($appid)){
+			throw new ErrorException('Without the wechat app');
+		}
+
+		return $this;
 	}
 
 	/**
@@ -53,32 +54,25 @@ class Wechat{
 	 * @return {string}
 	 */
 	private function getAccessToken(){
-		if(empty($this->appid) || empty($this->appsecret)){
-			throw new ErrorException('Appid and appsecret must be required');
-		}
 		$time = time();
 		if($this->accesstoken === false || $expired_at < $time){
-			$wxapp = Wxapp::findOne($this->appid);
-			if(!$wxapp){
-				$wxapp = new Wxapp;
-				$wxapp->appid = $this->appid;
-			}
-			if(empty($wxapp->updated_at) || $wxapp->updated_at + $wxapp->expires_in < $time){
+			if(empty($this->wechat->updated_at) || $this->wechat->updated_at + $this->wechat->expires_in < $time){
 				$result = Json::decode($this->curl($this->getUrl('token', [
 					'grant_type' => 'client_credential',
-					'appid' => $this->appid,
-					'secret' => $this->appsecret,
+					'appid' => $this->wechat->appid,
+					'secret' => $this->wechat->appsecret,
 				])));
 				if(isset($result['errcode'])){
 					throw new ErrorException($this->getMessage($result['errcode']));
 				}
-				$wxapp->access_token = $result['access_token'];
-				$wxapp->expires_in = $result['expires_in'];
-				$wxapp->save();
+				$this->wechat->access_token = $result['access_token'];
+				$this->wechat->expires_in = $result['expires_in'];
+				$this->wechat->save();
 			}
-			$this->accesstoken = $wxapp->access_token;
-			$this->expired_at = $wxapp->updated_at + $wxapp->expires_in;
+			$this->accesstoken = $this->wechat->access_token;
+			$this->expired_at = $this->wechat->updated_at + $this->wechat->expires_in;
 		}
+
 		return $this->accesstoken;
 	}
 
