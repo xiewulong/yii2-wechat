@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2014/12/30
+ * update: 2015/1/8
  * version: 0.0.1
  */
 
@@ -15,7 +15,7 @@ use yii\base\ErrorException;
 use yii\helpers\Json;
 use yii\wechat\models\Wechat;
 
-class WechatSdk{
+class Manager{
 
 	//微信api地址
 	private $api = 'https://api.weixin.qq.com/cgi-bin';
