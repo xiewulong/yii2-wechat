@@ -6,7 +6,7 @@ use Yii;
 use yii\base\ErrorException;
 use yii\wechat\models\Wechat;
 
-class Module extends yii\base\Module{
+class Module extends \yii\base\Module{
 
 	public function checkSignature($appid){
 		if($wechat = Wechat::findOne($appid)){
