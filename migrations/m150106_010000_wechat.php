@@ -12,6 +12,7 @@ class m150106_010000_wechat extends \yii\db\Migration{
 
 		$this->createTable('{{%wechat}}', [
 			'appid' => Schema::TYPE_STRING . '(50) primary key comment "AppID(应用ID)"',
+			'name' => Schema::TYPE_STRING . '(50) not null comment "名称"',
 			'appsecret' => Schema::TYPE_STRING . '(50) not null comment "AppSecret(应用密钥)"',
 			'token' => Schema::TYPE_STRING . '(50) not null comment "Token(令牌)"',
 			'aeskey' => Schema::TYPE_STRING . '(50) comment "EncodingAESKey(消息加解密密钥)"',
