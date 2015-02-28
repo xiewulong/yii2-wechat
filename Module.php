@@ -17,7 +17,7 @@ class Module extends \yii\base\Module{
 	public function init(){
 		parent::init();
 
-		$this->manager = Yii::createObject(Yii::$app->components[$this->defaultComponent]);
+		$this->manager = \Yii::createObject(Yii::$app->components[$this->defaultComponent]);
 	}
 
 	public function checkSignature($appid){
@@ -26,11 +26,12 @@ class Module extends \yii\base\Module{
 		}else{
 			return false;
 		}
-
-		$tmpArr = [$token, Yii::$app->request->get('timestamp'), Yii::$app->request->get('nonce')];
+		
+		$request = \Yii::$app->request;
+		$tmpArr = [$token, $request->get('timestamp'), $request->get('nonce')];
 		sort($tmpArr, SORT_STRING);
 
-		return sha1(implode($tmpArr)) == Yii::$app->request->get('signature');
+		return sha1(implode($tmpArr)) == $request->get('signature');
 	}
 	
 }
