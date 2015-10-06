@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2015/1/8
+ * update: 2015/10/6
  * version: 0.0.1
  */
 
@@ -37,7 +37,7 @@ class Manager{
 	 * @method getAccessToken
 	 * @since 0.0.1
 	 * @return {object}
-	 * @example Yii::$app->wechat->setAppid();
+	 * @example \Yii::$app->wechat->setAppid();
 	 */
 	public function setAppid($appid){
 		if(!$this->wechat = Wechat::findOne($appid)){
