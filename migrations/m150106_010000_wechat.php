@@ -2,9 +2,9 @@
 
 use yii\db\Schema;
 
-class m150106_010000_wechat extends \yii\db\Migration{
+class m150106_010000_wechat extends \yii\db\Migration {
 
-	public function up(){
+	public function up() {
 		$tableOptions = 'engine=innodb character set utf8';
 		if($this->db->driverName === 'mysql') {
 			$tableOptions .= ' collate utf8_unicode_ci';
@@ -21,10 +21,10 @@ class m150106_010000_wechat extends \yii\db\Migration{
 			'expires_in' => Schema::TYPE_INTEGER . ' not null default 0 comment "access_token有效时长(秒)"',
 			'created_at' => Schema::TYPE_INTEGER . ' not null comment "创建时间"',
 			'updated_at' => Schema::TYPE_INTEGER . ' not null comment "更新时间"',
-		], $tableOptions . ' comment="微信app"');
+		], $tableOptions . ' comment="公众号"');
 	}
 
-	public function down(){
+	public function down() {
 		$this->dropTable('{{%wechat}}');
 	}
 
