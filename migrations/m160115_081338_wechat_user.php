@@ -2,7 +2,7 @@
 
 use yii\db\Schema;
 
-class m160107_105323_wechat_user extends \yii\db\Migration {
+class m160115_081338_wechat_user extends \yii\db\Migration {
 
 	public function up() {
 		$tableOptions = 'engine=innodb character set utf8';
