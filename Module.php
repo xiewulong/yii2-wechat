@@ -6,7 +6,7 @@ use Yii;
 use yii\base\ErrorException;
 use yii\wechat\models\Wechat;
 
-class Module extends \yii\base\Module{
+class Module extends \yii\base\Module {
 
 	public $defaultRoute = 'api';
 
@@ -14,16 +14,16 @@ class Module extends \yii\base\Module{
 
 	public $manager;
 
-	public function init(){
+	public function init() {
 		parent::init();
 
 		$this->manager = \Yii::createObject(Yii::$app->components[$this->defaultComponent]);
 	}
 
-	public function checkSignature($appid){
-		if($wechat = Wechat::findOne($appid)){
+	public function checkSignature($appid) {
+		if($wechat = Wechat::findOne($appid)) {
 			$token = $wechat->token;
-		}else{
+		} else {
 			return false;
 		}
 		

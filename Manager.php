@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2015/10/6
+ * update: 2016/1/18
  * version: 0.0.1
  */
 
@@ -15,7 +15,7 @@ use yii\base\ErrorException;
 use yii\helpers\Json;
 use yii\wechat\models\Wechat;
 
-class Manager{
+class Manager {
 
 	//微信api地址
 	private $api = 'https://api.weixin.qq.com/cgi-bin';
@@ -39,8 +39,8 @@ class Manager{
 	 * @return {object}
 	 * @example \Yii::$app->wechat->setAppid();
 	 */
-	public function setAppid($appid){
-		if(!$this->wechat = Wechat::findOne($appid)){
+	public function setAppid($appid) {
+		if(!$this->wechat = Wechat::findOne($appid)) {
 			throw new ErrorException('Without the wechat app');
 		}
 
@@ -53,16 +53,16 @@ class Manager{
 	 * @since 0.0.1
 	 * @return {string}
 	 */
-	private function getAccessToken(){
+	private function getAccessToken() {
 		$time = time();
-		if($this->accesstoken === false || $expired_at < $time){
-			if(empty($this->wechat->updated_at) || $this->wechat->updated_at + $this->wechat->expires_in < $time){
+		if($this->accesstoken === false || $expired_at < $time) {
+			if(empty($this->wechat->updated_at) || $this->wechat->updated_at + $this->wechat->expires_in < $time) {
 				$result = Json::decode($this->curl($this->getUrl('token', [
 					'grant_type' => 'client_credential',
 					'appid' => $this->wechat->appid,
 					'secret' => $this->wechat->appsecret,
 				])));
-				if(isset($result['errcode'])){
+				if(isset($result['errcode'])) {
 					throw new ErrorException($this->getMessage($result['errcode']));
 				}
 				$this->wechat->access_token = $result['access_token'];
@@ -84,7 +84,7 @@ class Manager{
 	 * @param {array} $query 参数
 	 * @return {string}
 	 */
-	private function getUrl($action, $query){
+	private function getUrl($action, $query) {
 		return $this->api . '/' . $action . (empty($query) ? '' : '?' . http_build_query($query));
 	}
 
@@ -94,8 +94,8 @@ class Manager{
 	 * @since 0.0.1
 	 * @return {string}
 	 */
-	private function getMessage($status){
-		if($this->messages === false){
+	private function getMessage($status) {
+		if($this->messages === false) {
 			$this->messages = require(__DIR__ . '/messages.php');
 		}
 
@@ -111,16 +111,16 @@ class Manager{
 	 * @param {string} [$useragent=null] 模拟浏览器用户代理信息
 	 * @return {string}
 	 */
-	private function curl($url, $data = null, $useragent = null){
+	private function curl($url, $data = null, $useragent = null) {
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_URL, $url);
 		curl_setopt($curl, CURLOPT_HEADER, 0);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-		if(!empty($data)){
+		if(!empty($data)) {
 			curl_setopt($curl, CURLOPT_POST, 1);
 			curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
 		}
-		if(!empty($useragent)){
+		if(!empty($useragent)) {
 			curl_setopt($curl, CURLOPT_USERAGENT, $useragent);
 		}
 		$data = curl_exec($curl);
