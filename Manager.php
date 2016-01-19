@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/1/18
+ * update: 2016/1/19
  * version: 0.0.1
  */
 
@@ -18,23 +18,23 @@ use yii\wechat\models\Wechat;
 class Manager {
 
 	//微信api地址
-	private $api = 'https://api.weixin.qq.com/cgi-bin';
+	private $api = 'https://api.weixin.qq.com/cgi-bin/';
 
-	//wechat app
-	private $wechat;
-
-	//access_token
-	private $accesstoken = false;
-
-	//access_token过期时间
-	private $expired_at = 0;
+	//公众号
+	public $wechat;
 
 	//提示信息
 	private $messages = false;
 
+	//返回码
+	public $errcode = 0;
+
+	//返回码说明
+	public $errmsg = null;
+
 	/**
-	 * 验证
-	 * @method getAccessToken
+	 * 获取公众号配置信息
+	 * @method setAppid
 	 * @since 0.0.1
 	 * @return {object}
 	 * @example \Yii::$app->wechat->setAppid();
@@ -48,44 +48,100 @@ class Manager {
 	}
 
 	/**
-	 * 获取accesstoken
-	 * @method getAccessToken
+	 * 获取微信服务器IP地址
+	 * @method getCallbackIp
 	 * @since 0.0.1
-	 * @return {string}
+	 * @return {array}
+	 * @example \Yii::$app->wechat->getCallbackIp();
 	 */
-	private function getAccessToken() {
-		$time = time();
-		if($this->accesstoken === false || $expired_at < $time) {
-			if(empty($this->wechat->updated_at) || $this->wechat->updated_at + $this->wechat->expires_in < $time) {
-				$result = Json::decode($this->curl($this->getUrl('token', [
-					'grant_type' => 'client_credential',
-					'appid' => $this->wechat->appid,
-					'secret' => $this->wechat->appsecret,
-				])));
-				if(isset($result['errcode'])) {
-					throw new ErrorException($this->getMessage($result['errcode']));
-				}
-				$this->wechat->access_token = $result['access_token'];
-				$this->wechat->expires_in = $result['expires_in'];
-				$this->wechat->save();
-			}
-			$this->accesstoken = $this->wechat->access_token;
-			$this->expired_at = $this->wechat->updated_at + $this->wechat->expires_in;
+	public function getCallbackIp() {
+		if(empty($this->wechat->ip_list)){
+			$this->refreshIpList();
 		}
 
-		return $this->accesstoken;
+		return $this->wechat->ipListArray;
+	}
+
+	/**
+	 * 刷新微信服务器IP地址
+	 * @method refreshIpList
+	 * @since 0.0.1
+	 * @return {none}
+	 * @example \Yii::$app->wechat->refreshIpList();
+	 */
+	public function refreshIpList() {
+		$data = Json::decode($this->curl($this->getApiUrl('getcallbackip', [
+			'access_token' => $this->getAccessToken(),
+		])));
+		if(isset($data['errcode']) && isset($data['errmsg'])) {
+			$this->errcode = $data['errcode'];
+			$this->errmsg = $this->getMessage($data['errmsg']);
+		}
+		if(isset($data['ip_list'])){
+			$this->wechat->ip_list = Json::encode($data['ip_list']);
+			return $this->wechat->save();
+		}
+		
+		return false;
+	}
+
+	/**
+	 * 获取接口调用凭据
+	 * @method getAccessToken
+	 * @since 0.0.1
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->getAccessToken();
+	 */
+	public function getAccessToken() {
+		$time = time();
+		if(empty($this->wechat->access_token) || $this->wechat->expired_at < $time) {
+			$data = Json::decode($this->curl($this->getApiUrl('token', [
+				'grant_type' => 'client_credential',
+				'appid' => $this->wechat->appid,
+				'secret' => $this->wechat->secret,
+			])));
+			if(isset($data['access_token']) && isset($data['expires_in'])) {
+				$this->wechat->access_token = $data['access_token'];
+				$this->wechat->expired_at = $time + $data['expires_in'];
+				$this->wechat->save();
+			} else if(isset($data['errcode']) && isset($data['errmsg'])) {
+				$this->errcode = $data['errcode'];
+				$this->errmsg = $this->getMessage($data['errmsg']);
+			}
+		}
+
+		return $this->wechat->access_token;
+	}
+
+	/**
+	 * 生成随机令牌
+	 * @method generateToken
+	 * @since 0.0.1
+	 * @return {string}
+	 * @example \Yii::$app->wechat->generateToken();
+	 */
+	public function generateToken() {
+		$chars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+		$max = count($chars) - 1;
+		
+		$tokenArr = [];
+		for($i = 0, $len = mt_rand(3, 32); $i < $len; $i++){
+			$tokenArr[] = $chars[mt_rand(0, $max)];
+		}
+
+		return implode('', $tokenArr);
 	}
 
 	/**
 	 * 获取接口完整访问地址
-	 * @method getUrl
+	 * @method getApiUrl
 	 * @since 0.0.1
 	 * @param {string} $action 接口动作
 	 * @param {array} $query 参数
 	 * @return {string}
 	 */
-	private function getUrl($action, $query) {
-		return $this->api . '/' . $action . (empty($query) ? '' : '?' . http_build_query($query));
+	private function getApiUrl($action, $query) {
+		return $this->api . $action . (empty($query) ? '' : '?' . http_build_query($query));
 	}
 
 	/**

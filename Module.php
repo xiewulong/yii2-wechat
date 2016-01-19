@@ -21,17 +21,12 @@ class Module extends \yii\base\Module {
 	}
 
 	public function checkSignature($appid) {
-		if($wechat = Wechat::findOne($appid)) {
-			$token = $wechat->token;
-		} else {
-			return false;
-		}
+		$this->manager->setAppid($appid);
 		
-		$request = \Yii::$app->request;
-		$tmpArr = [$token, $request->get('timestamp'), $request->get('nonce')];
+		$tmpArr = [$this->manager->wechat->token, \Yii::$app->request->get('timestamp'), \Yii::$app->request->get('nonce')];
 		sort($tmpArr, SORT_STRING);
 
-		return sha1(implode($tmpArr)) == $request->get('signature');
+		return \Yii::$app->security->compareString(sha1(implode($tmpArr)), \Yii::$app->request->get('signature'));
 	}
 	
 }
