@@ -4,7 +4,6 @@ namespace yii\wechat;
 
 use Yii;
 use yii\base\ErrorException;
-use yii\wechat\models\Wechat;
 
 class Module extends \yii\base\Module {
 
@@ -20,13 +19,15 @@ class Module extends \yii\base\Module {
 		$this->manager = \Yii::createObject(Yii::$app->components[$this->defaultComponent]);
 	}
 
-	public function checkSignature($appid) {
-		$this->manager->setAppid($appid);
-		
+	public function checkSignature() {
 		$tmpArr = [$this->manager->wechat->token, \Yii::$app->request->get('timestamp'), \Yii::$app->request->get('nonce')];
 		sort($tmpArr, SORT_STRING);
 
 		return \Yii::$app->security->compareString(sha1(implode($tmpArr)), \Yii::$app->request->get('signature'));
+	}
+
+	public function handleMessage($postObj) {
+
 	}
 	
 }

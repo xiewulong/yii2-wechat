@@ -26,63 +26,39 @@ class ApiController extends Controller {
 	}
 	
 	public function actionPublic($appid) {
+		$this->module->manager->setAppid($appid);
+
+		//服务器地址设置验证
 		if($echostr = \Yii::$app->request->get('echostr')) {
-			return $this->module->checkSignature($appid) ? $echostr : null;
+			return $this->module->checkSignature() ? $echostr : null;
 		}
 
-		/*
+		//过滤非消息请求
 		if(!isset($GLOBALS["HTTP_RAW_POST_DATA"])){
 			throw new NotFoundHttpException(\Yii::t('common', 'Page not found.'));
 		}
-		*/
-/*
+
+		//获取数据
 		$postStr = $GLOBALS["HTTP_RAW_POST_DATA"];
 		libxml_disable_entity_loader(true);
 		$postObj = simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
 
+		//处理数据并获取返回结果
+		//$response = $this->module->handleMessage($postObj);
+
+		//debug
 		$fromUsername = $postObj->FromUserName;
 		$toUsername = $postObj->ToUserName;
-		$keyword = trim($postObj->Content);
-		$time = time();
-		$textTpl = "<xml>
-					<ToUserName><![CDATA[%s]]></ToUserName>
-					<FromUserName><![CDATA[%s]]></FromUserName>
-					<CreateTime>%s</CreateTime>
-					<MsgType><![CDATA[%s]]></MsgType>
-					<Content><![CDATA[%s]]></Content>
-					<FuncFlag>0</FuncFlag>
-					</xml>";             
-		if(!empty( $keyword ))
-		{
-			$msgType = "text";
-			$contentStr = "Welcome to wechat world!";
-			$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
-			echo $resultStr;
-		}else{
-			echo "Input something...";
-		}
 		$response = [
-			'ToUserName' => '<![CDATA[' . $fromUsername . ']]>',
-			'FromUserName' => '<![CDATA[' . $toUsername . ']]>',
-			'CreateTime' => $time,
-			'msgType' => '<![CDATA[' . $msgType . ']]>',
-			'Content' => '<![CDATA[' . $contentStr . ']]>',
-			'FuncFlag' => 0,
+			'ToUserName' => (string) $fromUsername,
+			'FromUserName' => (string) $toUsername,
+			'CreateTime' => time(),
+			'MsgType' => 'text',
+			'Content' => 'FromUserName: ' . $fromUsername . ', ToUserName: ' . $toUsername . ', Content: ' . $postObj->Content,
 		];
-*/
-		$aaa = 'sdfdsfsdf';
-		$response = [
-			'ToUserName' => (string)$aaa,
-			'FromUserName' => 222,
-			'CreateTime' => 333,
-			'msgType' => 444,
-			'Content' => 555,
-			'FuncFlag' => 0,
-		];
-		\Yii::$app->response->formatters[Response::FORMAT_XML] = [
-			'class' => 'yii\web\XmlResponseFormatter',
-			'rootTag' => 'xml',
-		];
+
+		//设置xml格式
+		\Yii::$app->response->formatters[Response::FORMAT_XML] = 'yii\wechat\components\XmlResponseFormatter';
 		\Yii::$app->response->format = Response::FORMAT_XML;
 		return $response;
 	}
