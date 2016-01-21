@@ -3,12 +3,15 @@
 namespace yii\wechat\components;
 
 use DOMCdataSection;
+use DOMDocument;
 use DOMElement;
 use DOMText;
 use yii\base\Arrayable;
 use yii\helpers\StringHelper;
 
 class XmlResponseFormatter extends \yii\web\XmlResponseFormatter {
+
+    public $encoding = 'utf-8';
 
 	public $rootTag = 'xml';
 
@@ -44,6 +47,16 @@ class XmlResponseFormatter extends \yii\web\XmlResponseFormatter {
 			//$element->appendChild(new DOMText((string) $data));
 			$element->appendChild(is_string($data) ? new DOMCdataSection((string) $data) : new DOMText((string) $data));
 		}
+	}
+
+	public static function formatData($data) {
+		$XmlResponseFormatter = new static;
+		$dom = new DOMDocument($XmlResponseFormatter->version, $XmlResponseFormatter->encoding);
+		$root = new DOMElement($XmlResponseFormatter->rootTag);
+		$dom->appendChild($root);
+		$XmlResponseFormatter->buildXml($root, $data);
+
+		return $dom->saveXML();
 	}
 
 }

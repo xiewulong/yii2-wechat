@@ -25,37 +25,55 @@ class ApiController extends Controller {
 		];
 	}
 	
-	public function actionPublic($appid) {
+	public function actionPublic($appid, $echostr = null, $signature = null, $timestamp = null, $nonce = null, $encrypt_type = null, $msg_signature = null) {
 		$this->module->manager->setAppid($appid);
 
-		//服务器地址设置验证
-		if($echostr = \Yii::$app->request->get('echostr')) {
-			return $this->module->checkSignature() ? $echostr : null;
+		//验证消息
+		if(!$this->module->checkSignature($signature, $timestamp, $nonce)) {
+			throw new NotFoundHttpException(\Yii::t('common', 'Page not found.'));
+		}
+
+		//返回服务器地址设置随机字符串
+		if($echostr) {
+			return $echostr;
 		}
 
 		//过滤非消息请求
-		if(!isset($GLOBALS["HTTP_RAW_POST_DATA"])){
+		if(!isset($GLOBALS["HTTP_RAW_POST_DATA"])) {
 			throw new NotFoundHttpException(\Yii::t('common', 'Page not found.'));
 		}
 
 		//获取数据
 		$postStr = $GLOBALS["HTTP_RAW_POST_DATA"];
 		libxml_disable_entity_loader(true);
-		$postObj = simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
+		$postObj = (array) simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
 
-		//处理数据并获取返回结果
-		//$response = $this->module->handleMessage($postObj);
+		//确定是否开启安全模式
+		$safeMode = $encrypt_type && $msg_signature;
+
+		//安全模式下验证并解密消息
+		if($safeMode && (!isset($postObj['Encrypt']) || !($postObj = $this->module->decryptMessage($msg_signature, $timestamp, $nonce, $postObj['Encrypt'])))) {
+			throw new NotFoundHttpException(\Yii::t('common', 'Page not found.'));
+		}
+
+		//处理数据并获取回复结果
+		$response = $this->module->handleMessage($postObj);
 
 		//debug
-		$fromUsername = $postObj->FromUserName;
-		$toUsername = $postObj->ToUserName;
+		$fromUsername = $postObj['FromUserName'];
+		$toUsername = $postObj['ToUserName'];
 		$response = [
-			'ToUserName' => (string) $fromUsername,
-			'FromUserName' => (string) $toUsername,
+			'ToUserName' => $fromUsername,
+			'FromUserName' => $toUsername,
 			'CreateTime' => time(),
 			'MsgType' => 'text',
-			'Content' => 'FromUserName: ' . $fromUsername . ', ToUserName: ' . $toUsername . ', Content: ' . $postObj->Content,
+			'Content' => 'FromUserName: ' . $fromUsername . ', ToUserName: ' . $toUsername . ', MsgType: ' . $postObj['MsgType'] . ', Url: ' . \Yii::$app->request->url,
 		];
+
+		//加密回复消息
+		if($safeMode && $response){
+			$response = $this->module->encryptMessage($response, $timestamp, $nonce);
+		}
 
 		//设置xml格式
 		\Yii::$app->response->formatters[Response::FORMAT_XML] = 'yii\wechat\components\XmlResponseFormatter';

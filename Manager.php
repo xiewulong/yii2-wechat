@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/1/19
+ * update: 2016/1/21
  * version: 0.0.1
  */
 
@@ -121,15 +121,27 @@ class Manager {
 	 * @example \Yii::$app->wechat->generateToken();
 	 */
 	public function generateToken() {
-		$chars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-		$max = count($chars) - 1;
+		return $this->generateRandomString(mt_rand(3, 32));
+	}
+
+	/**
+	 * 生成随机字符串
+	 * @method generateRandomString
+	 * @since 0.0.1
+	 * @param {int} $len 长度
+	 * @return {string}
+	 * @example \Yii::$app->wechat->generateRandomString($len);
+	 */
+	public function generateRandomString($len = 32) {
+		$chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+		$max = strlen($chars) - 1;
 		
-		$tokenArr = [];
-		for($i = 0, $len = mt_rand(3, 32); $i < $len; $i++){
-			$tokenArr[] = $chars[mt_rand(0, $max)];
+		$strArr = [];
+		for($i = 0; $i < $len; $i++){
+			$strArr[] = $chars[mt_rand(0, $max)];
 		}
 
-		return implode('', $tokenArr);
+		return implode($strArr);
 	}
 
 	/**
