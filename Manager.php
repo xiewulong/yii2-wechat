@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/1/21
+ * update: 2016/2/2
  * version: 0.0.1
  */
 
@@ -18,7 +18,7 @@ use yii\wechat\models\Wechat;
 class Manager {
 
 	//微信api地址
-	private $api = 'https://api.weixin.qq.com/cgi-bin/';
+	private $api = 'https://api.weixin.qq.com/cgi-bin';
 
 	//公众号
 	public $wechat;
@@ -55,7 +55,7 @@ class Manager {
 	 * @example \Yii::$app->wechat->getCallbackIp();
 	 */
 	public function getCallbackIp() {
-		if(empty($this->wechat->ip_list)){
+		if(empty($this->wechat->ip_list)) {
 			$this->refreshIpList();
 		}
 
@@ -66,18 +66,14 @@ class Manager {
 	 * 刷新微信服务器IP地址
 	 * @method refreshIpList
 	 * @since 0.0.1
-	 * @return {none}
+	 * @return {boolean}
 	 * @example \Yii::$app->wechat->refreshIpList();
 	 */
 	public function refreshIpList() {
-		$data = Json::decode($this->curl($this->getApiUrl('getcallbackip', [
+		$data = $this->getData('/getcallbackip', [
 			'access_token' => $this->getAccessToken(),
-		])));
-		if(isset($data['errcode']) && isset($data['errmsg'])) {
-			$this->errcode = $data['errcode'];
-			$this->errmsg = $this->getMessage($data['errmsg']);
-		}
-		if(isset($data['ip_list'])){
+		]);
+		if(isset($data['ip_list'])) {
 			$this->wechat->ip_list = Json::encode($data['ip_list']);
 			return $this->wechat->save();
 		}
@@ -95,18 +91,15 @@ class Manager {
 	public function getAccessToken() {
 		$time = time();
 		if(empty($this->wechat->access_token) || $this->wechat->expired_at < $time) {
-			$data = Json::decode($this->curl($this->getApiUrl('token', [
+			$data = $this->getData('/token', [
 				'grant_type' => 'client_credential',
 				'appid' => $this->wechat->appid,
 				'secret' => $this->wechat->secret,
-			])));
+			]);
 			if(isset($data['access_token']) && isset($data['expires_in'])) {
 				$this->wechat->access_token = $data['access_token'];
 				$this->wechat->expired_at = $time + $data['expires_in'];
 				$this->wechat->save();
-			} else if(isset($data['errcode']) && isset($data['errmsg'])) {
-				$this->errcode = $data['errcode'];
-				$this->errmsg = $this->getMessage($data['errmsg']);
 			}
 		}
 
@@ -137,7 +130,7 @@ class Manager {
 		$max = strlen($chars) - 1;
 		
 		$strArr = [];
-		for($i = 0; $i < $len; $i++){
+		for($i = 0; $i < $len; $i++) {
 			$strArr[] = $chars[mt_rand(0, $max)];
 		}
 
@@ -145,21 +138,35 @@ class Manager {
 	}
 
 	/**
-	 * 获取接口完整访问地址
-	 * @method getApiUrl
+	 * 获取数据
+	 * @method getData
 	 * @since 0.0.1
-	 * @param {string} $action 接口动作
+	 * @param {string} $action 接口名称
 	 * @param {array} $query 参数
-	 * @return {string}
+	 * @param {array} [$data] 数据
+	 * @return {array}
 	 */
-	private function getApiUrl($action, $query) {
-		return $this->api . $action . (empty($query) ? '' : '?' . http_build_query($query));
+	private function getData($action, $query, $data = null) {
+		$result = Json::decode($this->curl($this->getApiUrl($action, $query), $data));
+
+		if(!$result) {
+			$this->errcode = '503';
+			$this->errmsg = '接口服务不可用';
+		}
+
+		if(isset($result['errcode']) && isset($result['errmsg'])) {
+			$this->errcode = $result['errcode'];
+			$this->errmsg = $this->getMessage($result['errmsg']);
+		}
+
+		return $result;
 	}
 
 	/**
 	 * 获取信息
 	 * @method getMessage
 	 * @since 0.0.1
+	 * @param {string} $status 状态码
 	 * @return {string}
 	 */
 	private function getMessage($status) {
@@ -171,12 +178,24 @@ class Manager {
 	}
 
 	/**
+	 * 获取接口完整访问地址
+	 * @method getApiUrl
+	 * @since 0.0.1
+	 * @param {string} $action 接口名称
+	 * @param {array} $query 参数
+	 * @return {string}
+	 */
+	private function getApiUrl($action, $query) {
+		return $this->api . $action . (empty($query) ? '' : '?' . http_build_query($query));
+	}
+
+	/**
 	 * curl远程获取数据方法
 	 * @method curl
 	 * @since 0.0.1
 	 * @param {string} $url 请求地址
-	 * @param {array|string} [$data=null] post数据
-	 * @param {string} [$useragent=null] 模拟浏览器用户代理信息
+	 * @param {array|string} [$data] post数据
+	 * @param {string} [$useragent] 模拟浏览器用户代理信息
 	 * @return {string}
 	 */
 	private function curl($url, $data = null, $useragent = null) {
