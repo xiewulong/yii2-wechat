@@ -23,13 +23,6 @@ class m160115_081300_wechat extends \yii\db\Migration {
 			'created_at' => Schema::TYPE_INTEGER . ' not null comment "创建时间"',
 			'updated_at' => Schema::TYPE_INTEGER . ' not null comment "更新时间"',
 		], $tableOptions . ' comment="公众号"');
-
-		if(YII_ENV == 'prod')return false;
-		$time = time();
-
-		$this->batchInsert('{{%wechat}}', ['appid', 'name', 'secret', 'token', 'aeskey', 'created_at', 'updated_at'], [
-			['wx3be589ae8adf0700', '电科分期购', '8fc922ffbdf341709a1090e34281e231', 'QbfFwvsbWQ30zLMflZ', '4aiL7zVWhtPO97rx4FpSfOV2lMMGalShBJUBVW89Xb6', $time, $time],
-		]);
 	}
 
 	public function down() {
