@@ -123,10 +123,11 @@ class Manager {
 	public function refreshUsers($page = 1) {
 		$query = WechatUser::find()->where(['appid' => $this->wechat->appid])->select('openid');
 
+		$pageSize = 100;
 		$pagination = new Pagination([
 			'totalCount' => $query->count(),
-			'defaultPageSize' => 100,
-			'pageSizeLimit' => [0, 100],
+			'defaultPageSize' => $pageSize,
+			'pageSizeLimit' => [0, $pageSize],
 		]);
 		$pagination->setPage($page - 1, true);
 
