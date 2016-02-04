@@ -37,13 +37,14 @@ class Manager {
 	public $errmsg = null;
 
 	/**
-	 * 获取公众号配置信息
-	 * @method setAppid
+	 * 设置全局公众号
+	 * @method setApp
 	 * @since 0.0.1
+	 * @param {string} $appid AppID
 	 * @return {object}
-	 * @example \Yii::$app->wechat->setAppid();
+	 * @example \Yii::$app->wechat->setApp($appid);
 	 */
-	public function setAppid($appid) {
+	public function setApp($appid) {
 		if(!$this->wechat = Wechat::findOne($appid)) {
 			throw new ErrorException('Without the wechat app');
 		}
