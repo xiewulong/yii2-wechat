@@ -12,7 +12,7 @@ class m160115_081338_wechat_user extends \yii\db\Migration {
 
 		$this->createTable('{{%wechat_user}}', [
 			'id' => Schema::TYPE_PK . ' comment "id"',
-			'userid' => Schema::TYPE_INTEGER . ' not null comment "用户id"',
+			'userid' => Schema::TYPE_STRING . '(50) comment "用户id"',
 			'appid' => Schema::TYPE_STRING . '(50) not null comment "应用id"',
 			'openid' => Schema::TYPE_STRING . ' not null comment "绑定微信用户id, 对应appid唯一"',
 			'unionid' => Schema::TYPE_STRING . ' comment "UnionID"',
@@ -29,7 +29,7 @@ class m160115_081338_wechat_user extends \yii\db\Migration {
 			'headimgurl' => Schema::TYPE_TEXT . ' comment "头像, 尺寸: 0(640*640), 46, 64, 96, 132"',
 			'created_at' => Schema::TYPE_INTEGER . ' not null comment "创建时间"',
 			'updated_at' => Schema::TYPE_INTEGER . ' not null comment "更新时间"',
-		], $tableOptions . ' comment="公众号用户绑定"');
+		], $tableOptions . ' comment="公众号用户"');
 	}
 
 	public function down() {

@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/3
+ * update: 2016/2/4
  * version: 0.0.1
  */
 
@@ -13,9 +13,11 @@ namespace yii\wechat;
 
 use yii\base\ErrorException;
 use yii\data\Pagination;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
 use yii\wechat\models\Wechat;
 use yii\wechat\models\WechatUser;
+use yii\wechat\models\WechatUserGroup;
 
 class Manager {
 
@@ -50,16 +52,232 @@ class Manager {
 	}
 
 	/**
+	 * 批量移动用户分组
+	 * @method updateGroupUsers
+	 * @since 0.0.1
+	 * @param {string|array} $ids 用户id
+	 * @param {int} $gid 用户分组gid
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->updateGroupUsers($ids, $gid);
+	 */
+	public function updateGroupUsers($ids, $gid) {
+		if(is_array($ids)) {
+			$ids = implode(',', $ids);
+		}
+
+		$query = WechatUser::find()->where("id in ($ids) and groupid <> $gid");
+		$users = $query->all();
+		$openids = ArrayHelper::getColumn($users, 'openid');
+
+		if(!$openids) {
+			return true;
+		}
+
+		$data = $this->getData('/groups/members/batchupdate', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'openid_list' => $openids,
+			'to_groupid' => $gid,
+		]));
+
+		$result = $this->errcode == 0;
+		if($result) {
+			foreach($users as $user) {
+				if($user->group->updateCounters(['count' => -1])) {
+					$user->groupid = $gid;
+					if($user->save()) {
+						$user->refresh();
+						$user->group->updateCounters(['count' => 1]);
+					}
+				}
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * 移动用户分组
+	 * @method updateGroupUser
+	 * @since 0.0.1
+	 * @param {int} $id 用户id
+	 * @param {int} $gid 用户分组gid
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->updateGroupUser($id, $gid);
+	 */
+	public function updateGroupUser($id, $gid) {
+		$user = WechatUser::findOne($id);
+		if(!$user) {
+			throw new ErrorException('数据查询失败');
+		}
+
+		if($user->groupid == $gid) {
+			return true;
+		}
+
+		$data = $this->getData('/groups/members/update', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'openid' => $user->openid,
+			'to_groupid' => $gid,
+		]));
+
+		$result = $this->errcode == 0;
+		if($result && $user->group->updateCounters(['count' => -1])) {
+			$user->groupid = $gid;
+			if($user->save()) {
+				$user->refresh();
+				return $user->group->updateCounters(['count' => 1]);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * 删除用户分组
+	 * @method deleteGroup
+	 * @since 0.0.1
+	 * @param {int} $id 用户分组id
+	 * @param {string} [$name] 用户分组名字, 30个字符以内, 默认直接取数据库中的值
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->deleteGroup($id, $name);
+	 */
+	public function deleteGroup($id) {
+		$group = WechatUserGroup::findOne($id);
+		if(!$group) {
+			throw new ErrorException('数据查询失败');
+		}
+
+		$data = $this->getData('/groups/delete', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'group' => ['id' => $group->gid],
+		]));
+
+		if(empty($data)) {
+			return $group->delete();
+		}
+
+		return false;
+	}
+
+	/**
+	 * 修改用户分组名
+	 * @method updateGroup
+	 * @since 0.0.1
+	 * @param {int} $id 用户分组id
+	 * @param {string} [$name] 分组名字, 30个字符以内, 默认直接取数据库中的值
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->updateGroup($id, $name);
+	 */
+	public function updateGroup($id, $name = null) {
+		$group = WechatUserGroup::findOne($id);
+		if(!$group) {
+			throw new ErrorException('数据查询失败');
+		}
+
+		$data = $this->getData('/groups/update', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'group' => ['id' => $group->gid, 'name' => $name ? : $group->name],
+		]));
+
+		$result = $this->errcode == 0;
+		if($result && $name) {
+			$group->name = $name;
+			$group->save();
+		}
+
+		return $result;
+	}
+
+	/**
+	 * 创建用户分组
+	 * @method createGroup
+	 * @since 0.0.1
+	 * @param {string} $name 用户分组名字, 30个字符以内
+	 * @return {object}
+	 * @example \Yii::$app->wechat->createGroup($name);
+	 */
+	public function createGroup($name) {
+		$data = $this->getData('/groups/create', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'group' => ['name' => $name],
+		]));
+
+		$group = null;
+		if(isset($data['group'])) {
+			$group = new WechatUserGroup;
+			$group->appid = $this->wechat->appid;
+			$group->gid = $data['group']['id'];
+			$group->name = $data['group']['name'];
+			$group->save();
+		}
+
+		return $group;
+	}
+
+	/**
+	 * 查询所有用户分组
+	 * @method getGroups
+	 * @since 0.0.1
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->getGroups();
+	 */
+	public function getGroups() {
+		$data = $this->getData('/groups/get', [
+			'access_token' => $this->getAccessToken(),
+		]);
+
+		if(isset($data['groups'])) {
+			foreach($data['groups'] as $_group) {
+				$group = WechatUserGroup::findOne(['appid' => $this->wechat->appid, 'gid' => $_group['id']]);
+				if(!$group) {
+					$group = new WechatUserGroup;
+					$group->appid = $this->wechat->appid;
+					$group->gid = $_group['id'];
+				}
+				$group->name = $_group['name'];
+				$group->count = $_group['count'];
+				$group->save();
+			}
+		}
+
+		return $this->errcode == 0;
+	}
+
+	/**
+	 * 查询用户所在分组
+	 * @method getUserGroup
+	 * @since 0.0.1
+	 * @param {string} $openid openid
+	 * @return {int}
+	 * @example \Yii::$app->wechat->getUserGroup($openid);
+	 */
+	public function getUserGroup($openid) {
+		$data = $this->getData('/groups/getid', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'openid' => $openid,
+		]));
+
+		return isset($data['groupid']) ? $data['groupid'] : -1;
+	}
+
+	/**
 	 * 设置用户备注名
 	 * @method updateUserRemark
 	 * @since 0.0.1
 	 * @param {int} $id 用户id
-	 * @return {none}
-	 * @example \Yii::$app->wechat->updateUserRemark($id);
+	 * @param {string} [$remark] 备注名, 长度必须小于30字符, 默认直接取数据库中的值
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->updateUserRemark($id, $remark);
 	 */
-	public function updateUserRemark($id) {
+	public function updateUserRemark($id, $remark = null) {
 		$user = WechatUser::findOne($id);
-		if(!$user){
+		if(!$user) {
 			throw new ErrorException('数据查询失败');
 		}
 
@@ -67,10 +285,16 @@ class Manager {
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'openid' => $user->openid,
-			'remark' => $user->remark,
+			'remark' => $remark ? : $user->remark,
 		]));
 
-		return $this->errcode == 0;
+		$result = $this->errcode == 0;
+		if($result && $remark) {
+			$user->remark = $remark;
+			$user->save();
+		}
+
+		return $result;
 	}
 
 	/**
@@ -78,12 +302,12 @@ class Manager {
 	 * @method refreshUser
 	 * @since 0.0.1
 	 * @param {int} $id 用户id
-	 * @return {none}
+	 * @return {boolean}
 	 * @example \Yii::$app->wechat->refreshUser($id);
 	 */
 	public function refreshUser($id) {
 		$user = WechatUser::findOne($id);
-		if(!$user){
+		if(!$user) {
 			throw new ErrorException('数据查询失败');
 		}
 
@@ -93,23 +317,28 @@ class Manager {
 			'lang' => \Yii::$app->language,
 		]);
 
-		$user->subscribe = $_user['subscribe'];
-		if($user->subscribe == 1){
-			$user->subscribe_time = $_user['subscribe_time'];
-			$user->nickname = $_user['nickname'];
-			$user->sex = $_user['sex'];
-			$user->country = $_user['country'];
-			$user->city = $_user['city'];
-			$user->province = $_user['province'];
-			$user->language = $_user['language'];
-			$user->headimgurl = $_user['headimgurl'];
-			$user->remark = $_user['remark'];
-			$user->groupid = $_user['groupid'];
+		$result = $this->errcode == 0;
+		if($result) {
+			$user->subscribe = $data['subscribe'];
+			if($user->subscribe == 1) {
+				$user->subscribe_time = $data['subscribe_time'];
+				$user->nickname = $data['nickname'];
+				$user->sex = $data['sex'];
+				$user->country = $data['country'];
+				$user->city = $data['city'];
+				$user->province = $data['province'];
+				$user->language = $data['language'];
+				$user->headimgurl = $data['headimgurl'];
+				$user->remark = $data['remark'];
+				$user->groupid = $data['groupid'];
+			}
+			if(isset($data['unionid'])) {
+				$user->unionid = $data['unionid'];
+			}
+			$user->save();
 		}
-		if(isset($_user['unionid'])) {
-			$user->unionid = $_user['unionid'];
-		}
-		$user->save();
+
+		return $result;
 	}
 
 	/**
@@ -117,7 +346,7 @@ class Manager {
 	 * @method refreshUsers
 	 * @since 0.0.1
 	 * @param {int} [$page=1] 页码
-	 * @return {none}
+	 * @return {boolean}
 	 * @example \Yii::$app->wechat->refreshUsers($page);
 	 */
 	public function refreshUsers($page = 1) {
@@ -137,45 +366,45 @@ class Manager {
 			->all();
 
 		$user_list = [];
-		foreach($users as $user){
+		foreach($users as $user) {
 			$user['lang'] = \Yii::$app->language;
 			$user_list['user_list'][] = $user;
 		}
 
-		if($user_list){
+		if($user_list) {
 			$data = $this->getData('/user/info/batchget', [
 				'access_token' => $this->getAccessToken(),
 			], Json::encode($user_list));
-			foreach($data['user_info_list'] as $_user){
-				$user = WechatUser::findOne(['appid' => $this->wechat->appid, 'openid' => $_user['openid']]);
-				if(!$user){
-					$user = new WechatUser;
-					$user->appid = $this->wechat->appid;
-					$user->openid = $_user['openid'];
+			if(isset($data['user_info_list'])) {
+				foreach($data['user_info_list'] as $_user) {
+					$user = WechatUser::findOne(['appid' => $this->wechat->appid, 'openid' => $_user['openid']]);
+					if(!$user) {
+						$user = new WechatUser;
+						$user->appid = $this->wechat->appid;
+						$user->openid = $_user['openid'];
+					}
+					$user->subscribe = $_user['subscribe'];
+					if($user->subscribe == 1) {
+						$user->subscribe_time = $_user['subscribe_time'];
+						$user->nickname = $_user['nickname'];
+						$user->sex = $_user['sex'];
+						$user->country = $_user['country'];
+						$user->city = $_user['city'];
+						$user->province = $_user['province'];
+						$user->language = $_user['language'];
+						$user->headimgurl = $_user['headimgurl'];
+						$user->remark = $_user['remark'];
+						$user->groupid = $_user['groupid'];
+					}
+					if(isset($_user['unionid'])) {
+						$user->unionid = $_user['unionid'];
+					}
+					$user->save();
 				}
-				$user->subscribe = $_user['subscribe'];
-				if($user->subscribe == 1){
-					$user->subscribe_time = $_user['subscribe_time'];
-					$user->nickname = $_user['nickname'];
-					$user->sex = $_user['sex'];
-					$user->country = $_user['country'];
-					$user->city = $_user['city'];
-					$user->province = $_user['province'];
-					$user->language = $_user['language'];
-					$user->headimgurl = $_user['headimgurl'];
-					$user->remark = $_user['remark'];
-					$user->groupid = $_user['groupid'];
-				}
-				if(isset($_user['unionid'])) {
-					$user->unionid = $_user['unionid'];
-				}
-				$user->save();
 			}
 		}
 
-		if($page < $pagination->pageCount){
-			$this->refreshUsers($page + 1);
-		}
+		return $page < $pagination->pageCount ? $this->refreshUsers($page + 1) : $this->errcode == 0;
 	}
 
 	/**
@@ -183,7 +412,7 @@ class Manager {
 	 * @method getUsers
 	 * @since 0.0.1
 	 * @param {string} [$next_openid] 第一个拉取的OPENID, 不填默认从头开始拉取
-	 * @return {none}
+	 * @return {boolean}
 	 * @example \Yii::$app->wechat->getUsers($next_openid);
 	 */
 	public function getUsers($next_openid = null) {
@@ -192,7 +421,7 @@ class Manager {
 			'next_openid' => $next_openid,
 		]);
 
-		if($data['count'] && isset($data['data']) && isset($data['data']['openid'])) {
+		if(isset($data['count']) && $data['count'] && isset($data['data']) && isset($data['data']['openid'])) {
 			foreach($data['data']['openid'] as $openid) {
 				if($user = WechatUser::findOne(['appid' => $this->wechat->appid, 'openid' => $openid])) {
 					if($user->subscribe == 0) {
@@ -209,9 +438,7 @@ class Manager {
 			}
 		}
 
-		if($data['next_openid']) {
-			$this->getUsers($data['next_openid']);
-		}
+		return isset($data['next_openid']) && $data['next_openid'] ? $this->getUsers($data['next_openid']) : $this->errcode == 0;
 	}
 
 	/**
@@ -246,7 +473,7 @@ class Manager {
 			return $this->wechat->save();
 		}
 		
-		return false;
+		return $this->errcode == 0;
 	}
 
 	/**
