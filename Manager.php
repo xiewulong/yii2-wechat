@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/4
+ * update: 2016/2/6
  * version: 0.0.1
  */
 
@@ -18,11 +18,12 @@ use yii\helpers\Json;
 use yii\wechat\models\Wechat;
 use yii\wechat\models\WechatUser;
 use yii\wechat\models\WechatUserGroup;
+use yii\wechat\models\WechatMenu;
 
 class Manager {
 
-	//微信api地址
-	private $api = 'https://api.weixin.qq.com/cgi-bin';
+	//微信接口网关
+	private $api = 'https://api.weixin.qq.com';
 
 	//公众号
 	public $wechat;
@@ -53,6 +54,148 @@ class Manager {
 	}
 
 	/**
+	 * 获取公众号的菜单配置
+	 * @method getCurrentMenu
+	 * @since 0.0.1
+	 * @return {array}
+	 * @example \Yii::$app->wechat->getCurrentMenu();
+	 */
+	public function getCurrentMenu() {
+		$data = $this->getData('/cgi-bin/get_current_selfmenu_info', [
+			'access_token' => $this->getAccessToken(),
+		]);
+
+		return $this->errcode == 0 ? $data : [];
+	}
+
+	/**
+	 * 测试个性化菜单匹配结果
+	 * @method tryMatchMenu
+	 * @since 0.0.1
+	 * @param {string} $openid OpenID或微信号
+	 * @return {array}
+	 * @example \Yii::$app->wechat->tryMatchMenu($openid);
+	 */
+	public function tryMatchMenu($openid) {
+		$data = $this->getData('/cgi-bin/menu/trymatch', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode(['user_id' => $openid]));
+
+		return $this->errcode == 0 ? $data : [];
+	}
+
+	/**
+	 * 删除个性化菜单
+	 * @method deleteConditionalMenu
+	 * @since 0.0.1
+	 * @param {int} $menuid 菜单id
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->deleteConditionalMenu($menuid);
+	 */
+	public function deleteConditionalMenu($menuid) {
+		$data = $this->getData('/cgi-bin/menu/delconditional', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode(['menuid' => $menuid]));
+
+		return $this->errcode == 0 && WechatMenu::deleteAll(['appid' => $this->wechat->appid, 'conditional' => 1, 'menuid' => $menuid]);
+	}
+
+	/**
+	 * 删除自定义(个性化)菜单
+	 * @method deleteMenu
+	 * @since 0.0.1
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->deleteMenu();
+	 */
+	public function deleteMenu() {
+		$data = $this->getData('/cgi-bin/menu/delete', [
+			'access_token' => $this->getAccessToken(),
+		]);
+
+		return $this->errcode == 0 && WechatMenu::deleteAll(['appid' => $this->wechat->appid]);
+	}
+
+	/**
+	 * 更新自定义菜单
+	 * @method updateMenu
+	 * @since 0.0.1
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->updateMenu();
+	 */
+	public function updateMenu() {
+		$data = $this->getData('/cgi-bin/menu/create', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode(['button' => WechatMenu::getMenu($this->wechat->appid)]));
+
+		return $this->errcode == 0;
+	}
+
+	/**
+	 * 创建自定义(个性化)菜单
+	 * @method createMenu
+	 * @since 0.0.1
+	 * @param {array} $button 菜单数据
+	 * @param {array} [$matchrule] 个性化菜单匹配规则
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->createMenu($button, $matchrule);
+	 */
+	public function createMenu($button, $matchrule = null) {
+		$postData = ['button' => $button];
+		if($matchrule) {
+			$postData['matchrule'] = $matchrule;
+		}
+
+		$data = $this->getData('/cgi-bin/menu/' . ($matchrule ? 'addconditional' : 'create'), [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode($postData));
+
+		if(isset($data['menuid'])) {
+			$postData['menuid'] = $data['menuid'];
+		}
+
+		return $this->errcode == 0 && WechatMenu::createMenu($this->wechat->appid, $postData);
+	}
+
+	/**
+	 * 刷新自定义(个性化)菜单
+	 * @method refreshMenu
+	 * @since 0.0.1
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->refreshMenu();
+	 */
+	public function refreshMenu() {
+		$data = $this->getMenu();
+		if($data && isset($data['menu']) && isset($data['menu']['button'])) {
+			WechatMenu::deleteAll(['appid' => $this->wechat->appid]);
+			WechatMenu::addMenu($this->wechat->appid, $data['menu']['button'], isset($data['menu']['menuid']) ? $data['menu']['menuid'] : null);
+			if(isset($data['conditionalmenu'])) {
+				foreach($data['conditionalmenu'] as $conditionalmenu) {
+					WechatMenu::addMenu($this->wechat->appid, $conditionalmenu['button'], $conditionalmenu['menuid'], $conditionalmenu['matchrule']);
+				}
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * 查询自定义(个性化)菜单
+	 * @method getMenu
+	 * @since 0.0.1
+	 * @return {array}
+	 * @example \Yii::$app->wechat->getMenu();
+	 */
+	public function getMenu() {
+		$data = $this->getData('/cgi-bin/menu/get', [
+			'access_token' => $this->getAccessToken(),
+		]);
+
+		return $this->errcode == 0 ? $data : [];
+	}
+
+	/**
 	 * 批量移动用户分组
 	 * @method updateGroupUsers
 	 * @since 0.0.1
@@ -74,7 +217,7 @@ class Manager {
 			return true;
 		}
 
-		$data = $this->getData('/groups/members/batchupdate', [
+		$data = $this->getData('/cgi-bin/groups/members/batchupdate', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'openid_list' => $openids,
@@ -116,7 +259,7 @@ class Manager {
 			return true;
 		}
 
-		$data = $this->getData('/groups/members/update', [
+		$data = $this->getData('/cgi-bin/groups/members/update', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'openid' => $user->openid,
@@ -150,7 +293,7 @@ class Manager {
 			throw new ErrorException('数据查询失败');
 		}
 
-		$data = $this->getData('/groups/delete', [
+		$data = $this->getData('/cgi-bin/groups/delete', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'group' => ['id' => $group->gid],
@@ -178,7 +321,7 @@ class Manager {
 			throw new ErrorException('数据查询失败');
 		}
 
-		$data = $this->getData('/groups/update', [
+		$data = $this->getData('/cgi-bin/groups/update', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'group' => ['id' => $group->gid, 'name' => $name ? : $group->name],
@@ -202,7 +345,7 @@ class Manager {
 	 * @example \Yii::$app->wechat->createGroup($name);
 	 */
 	public function createGroup($name) {
-		$data = $this->getData('/groups/create', [
+		$data = $this->getData('/cgi-bin/groups/create', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'group' => ['name' => $name],
@@ -228,7 +371,7 @@ class Manager {
 	 * @example \Yii::$app->wechat->getGroups();
 	 */
 	public function getGroups() {
-		$data = $this->getData('/groups/get', [
+		$data = $this->getData('/cgi-bin/groups/get', [
 			'access_token' => $this->getAccessToken(),
 		]);
 
@@ -253,12 +396,12 @@ class Manager {
 	 * 查询用户所在分组
 	 * @method getUserGroup
 	 * @since 0.0.1
-	 * @param {string} $openid openid
+	 * @param {string} $openid OpenID
 	 * @return {int}
 	 * @example \Yii::$app->wechat->getUserGroup($openid);
 	 */
 	public function getUserGroup($openid) {
-		$data = $this->getData('/groups/getid', [
+		$data = $this->getData('/cgi-bin/groups/getid', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'openid' => $openid,
@@ -282,7 +425,7 @@ class Manager {
 			throw new ErrorException('数据查询失败');
 		}
 
-		$data = $this->getData('/user/info/updateremark', [
+		$data = $this->getData('/cgi-bin/user/info/updateremark', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'openid' => $user->openid,
@@ -312,7 +455,7 @@ class Manager {
 			throw new ErrorException('数据查询失败');
 		}
 
-		$data = $this->getData('/user/info', [
+		$data = $this->getData('/cgi-bin/user/info', [
 			'access_token' => $this->getAccessToken(),
 			'openid' => $user->openid,
 			'lang' => \Yii::$app->language,
@@ -373,7 +516,7 @@ class Manager {
 		}
 
 		if($user_list) {
-			$data = $this->getData('/user/info/batchget', [
+			$data = $this->getData('/cgi-bin/user/info/batchget', [
 				'access_token' => $this->getAccessToken(),
 			], Json::encode($user_list));
 			if(isset($data['user_info_list'])) {
@@ -417,7 +560,7 @@ class Manager {
 	 * @example \Yii::$app->wechat->getUsers($next_openid);
 	 */
 	public function getUsers($next_openid = null) {
-		$data = $this->getData('/user/get', [
+		$data = $this->getData('/cgi-bin/user/get', [
 			'access_token' => $this->getAccessToken(),
 			'next_openid' => $next_openid,
 		]);
@@ -465,7 +608,7 @@ class Manager {
 	 * @example \Yii::$app->wechat->refreshIpList();
 	 */
 	public function refreshIpList() {
-		$data = $this->getData('/getcallbackip', [
+		$data = $this->getData('/cgi-bin/getcallbackip', [
 			'access_token' => $this->getAccessToken(),
 		]);
 
@@ -487,7 +630,7 @@ class Manager {
 	public function getAccessToken() {
 		$time = time();
 		if(empty($this->wechat->access_token) || $this->wechat->expired_at < $time) {
-			$data = $this->getData('/token', [
+			$data = $this->getData('/cgi-bin/token', [
 				'grant_type' => 'client_credential',
 				'appid' => $this->wechat->appid,
 				'secret' => $this->wechat->secret,

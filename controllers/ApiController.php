@@ -26,7 +26,7 @@ class ApiController extends Controller {
 	}
 	
 	public function actionPublic($appid, $echostr = null, $signature = null, $timestamp = null, $nonce = null, $encrypt_type = null, $msg_signature = null) {
-		$this->module->manager->setAppid($appid);
+		$this->module->manager->setApp($appid);
 
 		//验证消息
 		if(!$this->module->checkSignature($signature, $timestamp, $nonce)) {

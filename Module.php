@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2016/1/21
- * update: 2016/1/21
+ * update: 2016/2/6
  * version: 0.0.1
  */
 
@@ -214,18 +214,50 @@ class Module extends \yii\base\Module {
 							$message->ticket = $postObj['Ticket'];
 						}
 						break;
-					case 'scan':
+					case 'SCAN':
 						$message->event_key = $postObj['EventKey'];
 						$message->ticket = $postObj['Ticket'];
 						break;
-					case 'location':
+					case 'LOCATION':
 						$message->latitude = $postObj['Latitude'];
 						$message->longitude = $postObj['Longitude'];
 						$message->precision = $postObj['Precision'];
 						break;
-					case 'click':
-					case 'view':
+					case 'CLICK':
 						$message->event_key = $postObj['EventKey'];
+						break;
+					case 'VIEW':
+						$message->event_key = $postObj['EventKey'];
+						if(isset($postObj['MenuID'])) {
+							$message->menu_id = $postObj['MenuID'];
+						}
+						break;
+					case 'scancode_push':
+					case 'scancode_waitmsg':
+						$message->event_key = $postObj['EventKey'];
+						if(isset($postObj['ScanCodeInfo'])) {
+							$message->scan_type = $postObj['ScanCodeInfo']['ScanType'];
+							$message->scan_result = $postObj['ScanCodeInfo']['ScanResult'];
+						}
+						break;
+					case 'pic_sysphoto':
+					case 'pic_photo_or_album':
+					case 'pic_weixin':
+						$message->event_key = $postObj['EventKey'];
+						if(isset($postObj['SendPicsInfo'])) {
+							$message->count = $postObj['SendPicsInfo']['Count'];
+							$message->pic_list = $postObj['SendPicsInfo']['PicList'];
+						}
+						break;
+					case 'location_select':
+						$message->event_key = $postObj['EventKey'];
+						if(isset($postObj['SendLocationInfo'])) {
+							$message->location_x = $postObj['SendLocationInfo']['Location_X'];
+							$message->location_y = $postObj['SendLocationInfo']['Location_Y'];
+							$message->scale = $postObj['SendLocationInfo']['Scale'];
+							$message->label = $postObj['SendLocationInfo']['Label'];
+							$message->poiname = $postObj['SendLocationInfo']['Poiname'];
+						}
 						break;
 				}
 				break;
