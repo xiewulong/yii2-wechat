@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/6
+ * update: 2016/2/14
  * version: 0.0.1
  */
 
@@ -530,7 +530,7 @@ class Manager {
 					$user->subscribe = $_user['subscribe'];
 					if($user->subscribe == 1) {
 						$user->subscribe_time = $_user['subscribe_time'];
-						$user->nickname = $_user['nickname'];
+						$user->nickname = urlencode($_user['nickname']);
 						$user->sex = $_user['sex'];
 						$user->country = $_user['country'];
 						$user->city = $_user['city'];

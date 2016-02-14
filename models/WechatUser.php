@@ -29,4 +29,15 @@ class WechatUser extends ActiveRecord {
 		return $this->hasOne(WechatUserGroup::classname(), ['appid' => 'appid', 'gid' => 'groupid']);
 	}
 
+	/**
+	 * 获取用户昵称
+	 * @method getName
+	 * @since 0.0.1
+	 * @return {string}
+	 * @example $this->getName();
+	 */
+	public function getName() {
+		return urldecode($this->nickname);
+	}
+
 }

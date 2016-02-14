@@ -18,7 +18,7 @@ class m160115_081338_wechat_user extends \yii\db\Migration {
 			'unionid' => Schema::TYPE_STRING . ' comment "UnionID"',
 			'subscribe' => Schema::TYPE_BOOLEAN . ' not null default 0 comment "订阅状态: 0未订阅, 1已订阅"',
 			'subscribe_time' => Schema::TYPE_INTEGER . ' not null default 0 comment "关注时间"',
-			'nickname' => Schema::TYPE_STRING . '(50) comment "昵称"',
+			'nickname' => Schema::TYPE_STRING . ' comment "昵称(urlencode)"',
 			'remark' => Schema::TYPE_STRING . '(50) comment "备注名, 长度必须小于30字符"',
 			'groupid' => Schema::TYPE_INTEGER . ' not null default 0 comment "所在分组ID"',
 			'sex' => Schema::TYPE_BOOLEAN . ' not null default 0 comment "性别: 0未知, 1男性, 2女性"',
