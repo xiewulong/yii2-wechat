@@ -5,12 +5,13 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/14
+ * update: 2016/2/17
  * version: 0.0.1
  */
 
 namespace yii\wechat;
 
+use Yii;
 use yii\base\ErrorException;
 use yii\data\Pagination;
 use yii\helpers\ArrayHelper;
@@ -19,6 +20,8 @@ use yii\wechat\models\Wechat;
 use yii\wechat\models\WechatUser;
 use yii\wechat\models\WechatUserGroup;
 use yii\wechat\models\WechatMenu;
+use yii\wechat\models\WechatMaterial;
+use yii\wechat\models\WechatMedia;
 
 class Manager {
 
@@ -37,6 +40,12 @@ class Manager {
 	//返回码说明
 	public $errmsg = null;
 
+	//fileupload扩展组件名
+	public $fileupload = 'fileupload';
+
+	//临时素材有效时长, 3天
+	private $effectiveTimeOfTemporaryMaterial = 259200;
+
 	/**
 	 * 设置全局公众号
 	 * @method setApp
@@ -51,6 +60,238 @@ class Manager {
 		}
 
 		return $this;
+	}
+
+	/**
+	 * 获取素材总数
+	 * @method getMaterialCount
+	 * @since 0.0.1
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->getMaterialCount();
+	 */
+	public function getMaterialCount() {
+		$data = $this->getData('/cgi-bin/material/get_materialcount', [
+			'access_token' => $this->getAccessToken(),
+		]);
+
+		if($this->errcode == 0) {
+			$this->wechat->count_image = $data['image_count'];
+			$this->wechat->count_voice = $data['voice_count'];
+			$this->wechat->count_video = $data['video_count'];
+			$this->wechat->count_news = $data['news_count'];
+			return $this->wechat->save();
+		}
+
+		return false;
+	}
+
+	/**
+	 * 获取素材列表
+	 * @method getMaterials
+	 * @since 0.0.1
+	 * @param {string} $type 素材的类型
+	 * @param {boolean} $all 是否返回所有
+	 * @param {int} $page 页码
+	 * @param {int} $count 每页数量
+	 * @return {array}
+	 * @example \Yii::$app->wechat->getMaterials($type, $all, $page, $count);
+	 */
+	public function getMaterials($type, $all = true, $page = 1, $count = 20) {
+		$offset = ($page - 1) * $count;
+		$data = $this->getData('/cgi-bin/material/batchget_material', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'type' => $type,
+			'offset' => $offset,
+			'count' => $count,
+		]));
+
+		if($this->errcode == 0) {
+			if($all && $offset + $data['item_count'] < $data['total_count']) {
+				if($_data = $this->getMaterials($type, $all, $page + 1, $count)) {
+					$data['item_count'] += $_data['item_count'];
+					$data['item'] = array_merge($data['item'], $_data['item']);
+				}
+			}
+
+			return $data;
+		}
+
+		return [];
+	}
+
+	/**
+	 * 删除永久素材
+	 * @method deleteMaterial
+	 * @since 0.0.1
+	 * @param {string} $media_id 媒体文件ID
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->deleteMaterial($media_id);
+	 */
+	public function deleteMaterial($media_id) {
+		$data = $this->getData('/cgi-bin/material/del_material', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode(['media_id' => $media_id]));
+
+		return $this->errcode == 0;
+	}
+
+	/**
+	 * 获取永久素材
+	 * @method getMaterial
+	 * @since 0.0.1
+	 * @param {string} $media_id 媒体文件ID
+	 * @return {string|array|null}
+	 * @example \Yii::$app->wechat->getMaterial($media_id);
+	 */
+	public function getMaterial($media_id) {
+		$data = $this->getData('/cgi-bin/material/get_material', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode(['media_id' => $media_id]));
+
+		return $this->errcode == 0 ? (isset($data['content']) && isset($data['extension']) ? $this->saveFile($data) : $data) : null;
+	}
+
+	/**
+	 * 新增永久素材
+	 * @method addMaterial
+	 * @since 0.0.1
+	 * @param {int} $materialid 素材数据id
+	 * @param {int} [$mediaid] 媒体数据id, 如果设置此值则为上传缩略图
+	 * @return {int}
+	 * @example \Yii::$app->wechat->addMaterial($materialid, $mediaid);
+	 */
+	public function addMaterial($materialid, $mediaid = null) {
+		$material = WechatMaterial::findOne($materialid);
+		if(!$material) {
+			throw new ErrorException('数据查询失败');
+		}
+
+		if($mediaid) {
+			$media = WechatMedia::findOne($mediaid);
+			if(!$media) {
+				throw new ErrorException('数据查询失败');
+			}
+			if($media->expired_at > 0) {
+				throw new ErrorException('不能为临时素材添加永久缩略图素材');
+			}
+			if($material->type != 'thumb') {
+				throw new ErrorException('素材类型错误');
+			}
+		}
+
+		$postData = ['media' => '@' . $material->localFile];
+		if($material->type == 'video') {
+			if($material->title == '') {
+				throw new ErrorException('视频标题不能为空');
+			}
+			$postData['description'] = Json::encode([
+				'title' => $material->title,
+				'introduction' => $material->description,
+			]);
+		}
+
+		$data = $this->getData('/cgi-bin/material/add_material', [
+			'access_token' => $this->getAccessToken(),
+			'type' => $material->type,
+		], $postData);
+		$material->cleanTmp();
+
+		if($this->errcode == 0) {
+			if($mediaid) {
+				$media->thumb_media_id = $data['media_id'];
+				$media->thumb_material_id = $material->id;
+				if(isset($data['url'])) {
+					$media->thumb_url = $data['url'];
+				}
+			} else {
+				$media = new WechatMedia;
+				$media->appid = $this->wechat->appid;
+				$media->media_id = $data['media_id'];
+				$media->material_id = $material->id;
+				if(isset($data['url'])) {
+					$media->url = $data['url'];
+				}
+			}
+			if($media->save()) {
+				return $media->id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * 获取临时素材
+	 * @method getMedia
+	 * @since 0.0.1
+	 * @param {string} $media_id 媒体文件ID
+	 * @return {string|null}
+	 * @example \Yii::$app->wechat->getMedia($media_id);
+	 */
+	public function getMedia($media_id) {
+		$data = $this->getData('/cgi-bin/media/get', [
+			'access_token' => $this->getAccessToken(),
+			'media_id' => $media_id,
+		]);
+
+		return $this->errcode == 0 ? $this->saveFile($data) : null;
+	}
+
+	/**
+	 * 新增临时素材
+	 * @method addMedia
+	 * @since 0.0.1
+	 * @param {int} $materialid 素材数据id
+	 * @param {int} [$mediaid] 媒体数据id, 如果设置此值则为上传缩略图
+	 * @return {int}
+	 * @example \Yii::$app->wechat->addMedia($materialid, $mediaid);
+	 */
+	public function addMedia($materialid, $mediaid = null) {
+		$material = WechatMaterial::findOne($materialid);
+		if(!$material) {
+			throw new ErrorException('数据查询失败');
+		}
+
+		if($mediaid) {
+			$media = WechatMedia::findOne($mediaid);
+			if(!$media) {
+				throw new ErrorException('数据查询失败');
+			}
+			if($media->expired_at == 0) {
+				throw new ErrorException('不能为永久素材添加临时缩略图素材');
+			}
+			if($material->type != 'thumb') {
+				throw new ErrorException('素材类型错误');
+			}
+		}
+
+		$data = $this->getData('/cgi-bin/media/upload', [
+			'access_token' => $this->getAccessToken(),
+			'type' => $material->type,
+		], [
+			'media' => '@' . $material->localFile,
+		]);
+		$material->cleanTmp();
+
+		if($this->errcode == 0) {
+			if($mediaid) {
+				$media->thumb_media_id = $data['thumb_media_id'];
+				$media->thumb_material_id = $material->id;
+				$media->thumb_expired_at = $data['created_at'] + $this->effectiveTimeOfTemporaryMaterial;
+			} else {
+				$media = new WechatMedia;
+				$media->appid = $this->wechat->appid;
+				$media->media_id = $data['media_id'];
+				$media->material_id = $material->id;
+				$media->expired_at = $data['created_at'] + $this->effectiveTimeOfTemporaryMaterial;
+			}
+			if($media->save()) {
+				return $media->id;
+			}
+		}
+
+		return 0;
 	}
 
 	/**
@@ -199,17 +440,17 @@ class Manager {
 	 * 批量移动用户分组
 	 * @method updateGroupUsers
 	 * @since 0.0.1
-	 * @param {string|array} $ids 用户id
+	 * @param {string|array} $uids 用户id
 	 * @param {int} $gid 用户分组gid
 	 * @return {boolean}
-	 * @example \Yii::$app->wechat->updateGroupUsers($ids, $gid);
+	 * @example \Yii::$app->wechat->updateGroupUsers($uids, $gid);
 	 */
-	public function updateGroupUsers($ids, $gid) {
-		if(is_array($ids)) {
-			$ids = implode(',', $ids);
+	public function updateGroupUsers($uids, $gid) {
+		if(is_array($uids)) {
+			$uids = implode(',', $uids);
 		}
 
-		$query = WechatUser::find()->where("id in ($ids) and groupid <> $gid");
+		$query = WechatUser::find()->where("id in ($uids) and groupid <> $gid");
 		$users = $query->all();
 		$openids = ArrayHelper::getColumn($users, 'openid');
 
@@ -244,13 +485,13 @@ class Manager {
 	 * 移动用户分组
 	 * @method updateGroupUser
 	 * @since 0.0.1
-	 * @param {int} $id 用户id
+	 * @param {int} $uid 用户id
 	 * @param {int} $gid 用户分组gid
 	 * @return {boolean}
-	 * @example \Yii::$app->wechat->updateGroupUser($id, $gid);
+	 * @example \Yii::$app->wechat->updateGroupUser($uid, $gid);
 	 */
-	public function updateGroupUser($id, $gid) {
-		$user = WechatUser::findOne($id);
+	public function updateGroupUser($uid, $gid) {
+		$user = WechatUser::findOne($uid);
 		if(!$user) {
 			throw new ErrorException('数据查询失败');
 		}
@@ -282,13 +523,13 @@ class Manager {
 	 * 删除用户分组
 	 * @method deleteGroup
 	 * @since 0.0.1
-	 * @param {int} $id 用户分组id
+	 * @param {int} $gid 用户分组id
 	 * @param {string} [$name] 用户分组名字, 30个字符以内, 默认直接取数据库中的值
 	 * @return {boolean}
-	 * @example \Yii::$app->wechat->deleteGroup($id, $name);
+	 * @example \Yii::$app->wechat->deleteGroup($gid, $name);
 	 */
-	public function deleteGroup($id) {
-		$group = WechatUserGroup::findOne($id);
+	public function deleteGroup($gid) {
+		$group = WechatUserGroup::findOne($gid);
 		if(!$group) {
 			throw new ErrorException('数据查询失败');
 		}
@@ -310,13 +551,13 @@ class Manager {
 	 * 修改用户分组名
 	 * @method updateGroup
 	 * @since 0.0.1
-	 * @param {int} $id 用户分组id
+	 * @param {int} $gid 用户分组id
 	 * @param {string} [$name] 分组名字, 30个字符以内, 默认直接取数据库中的值
 	 * @return {boolean}
-	 * @example \Yii::$app->wechat->updateGroup($id, $name);
+	 * @example \Yii::$app->wechat->updateGroup($gid, $name);
 	 */
-	public function updateGroup($id, $name = null) {
-		$group = WechatUserGroup::findOne($id);
+	public function updateGroup($gid, $name = null) {
+		$group = WechatUserGroup::findOne($gid);
 		if(!$group) {
 			throw new ErrorException('数据查询失败');
 		}
@@ -414,13 +655,13 @@ class Manager {
 	 * 设置用户备注名
 	 * @method updateUserRemark
 	 * @since 0.0.1
-	 * @param {int} $id 用户id
+	 * @param {int} $uid 用户id
 	 * @param {string} [$remark] 备注名, 长度必须小于30字符, 默认直接取数据库中的值
 	 * @return {boolean}
-	 * @example \Yii::$app->wechat->updateUserRemark($id, $remark);
+	 * @example \Yii::$app->wechat->updateUserRemark($uid, $remark);
 	 */
-	public function updateUserRemark($id, $remark = null) {
-		$user = WechatUser::findOne($id);
+	public function updateUserRemark($uid, $remark = null) {
+		$user = WechatUser::findOne($uid);
 		if(!$user) {
 			throw new ErrorException('数据查询失败');
 		}
@@ -445,12 +686,12 @@ class Manager {
 	 * 刷新用户基本信息
 	 * @method refreshUser
 	 * @since 0.0.1
-	 * @param {int} $id 用户id
+	 * @param {int} $uid 用户id
 	 * @return {boolean}
-	 * @example \Yii::$app->wechat->refreshUser($id);
+	 * @example \Yii::$app->wechat->refreshUser($uid);
 	 */
-	public function refreshUser($id) {
-		$user = WechatUser::findOne($id);
+	public function refreshUser($uid) {
+		$user = WechatUser::findOne($uid);
 		if(!$user) {
 			throw new ErrorException('数据查询失败');
 		}
@@ -677,6 +918,23 @@ class Manager {
 	}
 
 	/**
+	 * 保存文件
+	 * @method saveFile
+	 * @since 0.0.1
+	 * @param {array} $data 数据
+	 * @return {string}
+	 */
+	private function saveFile($data) {
+		$fileupload = \Yii::createObject(\Yii::$app->components[$this->fileupload]);
+		$fileinfo = $fileupload->createFile($data['extension']);
+		$file = fopen($fileinfo['tmp'], 'wb');
+		fwrite($file, $data['content']);
+		fclose($file);
+
+		return $fileupload->finalFile($fileinfo);
+	}
+
+	/**
 	 * 获取数据
 	 * @method getData
 	 * @since 0.0.1
@@ -686,19 +944,65 @@ class Manager {
 	 * @return {array}
 	 */
 	private function getData($action, $query, $data = null) {
-		$result = Json::decode($this->curl($this->getApiUrl($action, $query), $data));
+		$_result = $this->curl($this->getApiUrl($action, $query), $data);
 
-		if(!$result) {
+		if(!$_result) {
 			$this->errcode = '503';
 			$this->errmsg = '接口服务不可用';
 		}
 
-		if(isset($result['errcode']) && isset($result['errmsg'])) {
+		$result = json_decode($_result, true);
+		if(json_last_error()) {
+			if($extension = $this->getExtension($this->getMimeType($_result, true))) {
+				$result = ['content' => $_result, 'extension' => $extension];
+			} else {
+				$this->errcode = '503';
+				$this->errmsg = '数据不合法';
+			}
+		} else if(isset($result['errcode']) && isset($result['errmsg'])) {
 			$this->errcode = $result['errcode'];
 			$this->errmsg = $this->getMessage($result['errmsg']);
 		}
 
 		return $result;
+	}
+
+	/**
+	 * 获取文件扩展名
+	 * @method getExtension
+	 * @since 0.0.1
+	 * @param {string} $mimetype 文件MIME type
+	 * @return {string}
+	 */
+	private function getExtension($mimetype) {
+		if(preg_match('/^(image|audio|video)\/(.+)$/', $mimetype, $matches)) {
+			$extension = $matches[2];
+			if(in_array($extension, ['jpeg', 'pjpeg'])) {
+				$extension = 'jpg';
+			} else if(in_array($extension, ['mpeg4'])) {
+				$extension = 'mp4';
+			}
+
+			return $extension;
+		}
+
+		return null;
+	}
+
+	/**
+	 * 获取文件MIME type
+	 * @method getExtension
+	 * @since 0.0.1
+	 * @param {string} $data 数据
+	 * @param {boolean} $stream 数据流形式
+	 * @return {string}
+	 */
+	private function getMimeType($data, $stream = false) {
+		$finfo = finfo_open(FILEINFO_MIME_TYPE);
+		$mimetype = $stream ? finfo_buffer($finfo, $data) : finfo_file($finfo, $data);
+		finfo_close($finfo);
+
+		return $mimetype;
 	}
 
 	/**
@@ -733,29 +1037,26 @@ class Manager {
 	 * @method curl
 	 * @since 0.0.1
 	 * @param {string} $url 请求地址
-	 * @param {array|string} [$data] post数据
+	 * @param {string|array} [$data] post数据
 	 * @param {string} [$useragent] 模拟浏览器用户代理信息
-	 * @return {string}
+	 * @return {array}
 	 */
 	private function curl($url, $data = null, $useragent = null) {
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_URL, $url);
-		curl_setopt($curl, CURLOPT_HEADER, 0);
-		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-
+		curl_setopt($curl, CURLOPT_HEADER, false);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		if(!empty($data)) {
-			curl_setopt($curl, CURLOPT_POST, 1);
+			curl_setopt($curl, CURLOPT_POST, true);
 			curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
 		}
-
 		if(!empty($useragent)) {
 			curl_setopt($curl, CURLOPT_USERAGENT, $useragent);
 		}
-
-		$data = curl_exec($curl);
+		$result = curl_exec($curl);
 		curl_close($curl);
 
-		return $data;
+		return $result;
 	}
 
 }

@@ -22,6 +22,7 @@ class Wechat extends ActiveRecord {
 	/**
 	 * 获取微信服务器IP地址数组
 	 * @method getIpListArray
+	 * @since 0.0.1
 	 * @return {array}
 	 * @example $this->getIpListArray();
 	 */

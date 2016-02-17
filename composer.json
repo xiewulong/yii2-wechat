@@ -16,7 +16,8 @@
 		}
     ],
     "require": {
-        "yiisoft/yii2": "*"
+        "yiisoft/yii2": "*",
+        "xiewulong/yii2-fileupload": "*"
     },
 	"autoload": {
 		"psr-4": {"yii\\wechat\\": ""}
