@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2016/1/21
- * update: 2016/2/6
+ * update: 2016/2/16
  * version: 0.0.1
  */
 
