@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/17
+ * update: 2016/2/18
  * version: 0.0.1
  */
 
@@ -22,6 +22,9 @@ use yii\wechat\models\WechatUserGroup;
 use yii\wechat\models\WechatMenu;
 use yii\wechat\models\WechatMaterial;
 use yii\wechat\models\WechatMedia;
+use yii\wechat\models\WechatNews;
+use yii\wechat\models\WechatNewsMedia;
+use yii\wechat\models\WechatNewsImage;
 
 class Manager {
 
@@ -63,6 +66,157 @@ class Manager {
 	}
 
 	/**
+	 * 上传图文消息内的图片
+	 * @method addNewsImage
+	 * @since 0.0.1
+	 * @param {string} $url_source 源url(非微信端)
+	 * @return {int}
+	 * @example \Yii::$app->wechat->addNewsImage($url_source);
+	 */
+	public function addNewsImage($url_source) {
+		$image = new WechatNewsImage;
+		$image->url_source = $url_source;
+
+		$data = $this->getData('/cgi-bin/media/uploadimg', [
+			'access_token' => $this->getAccessToken(),
+		], ['media' => '@' . $image->localFile]);
+		$image->cleanTmp();
+
+		if($this->errcode == 0) {
+			$image->appid = $this->wechat->appid;
+			$image->url = $data['url'];
+			if($image->save()) {
+				return $image->id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * 删除图文消息
+	 * @method deleteNews
+	 * @since 0.0.1
+	 * @param {int} $newsmediaid 图文消息id
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->deleteNews($newsmediaid);
+	 */
+	public function deleteNews($newsmediaid) {
+		$media = WechatNewsMedia::findOne($newsmediaid);
+		if(!$media) {
+			throw new ErrorException('数据查询失败');
+		}
+
+		return $this->deleteMaterial($media->media_id) && $media->delete();
+	}
+
+	/**
+	 * 修改图文消息
+	 * @method updateNews
+	 * @since 0.0.1
+	 * @param {int} $newsmediaid 图文消息id
+	 * @return {int}
+	 * @example \Yii::$app->wechat->updateNews($newsmediaid);
+	 */
+	public function updateNews($newsmediaid) {
+		$media = WechatNewsMedia::findOne($newsmediaid);
+		if(!$media) {
+			throw new ErrorException('数据查询失败');
+		}
+
+		$articles = $media->news->getArticles($this);
+		if(count($articles) == count($media->thumbMediaidList)) {
+			$thumb_mediaids = [];
+			$success = true;
+			foreach($articles as $index => $article) {
+				$thumb_mediaids[] = $article['thumb_mediaid'];
+				$data = $this->getData('/cgi-bin/material/update_news', [
+					'access_token' => $this->getAccessToken(),
+				], Json::encode([
+					'media_id' => $media->media_id,
+					'index' => $index,
+					'articles' => $article,
+				]));
+				if($this->errcode != 0) {
+					$success = false;
+					break;
+				}
+			}
+			if($success) {
+				$media->thumb_mediaids = Json::encode($thumb_mediaids);
+				if($details = $this->getNews($media->media_id)) {
+					$media->urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'url'));
+					$media->thumb_urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'thumb_url'));
+				}
+				if($media->save()) {
+					return $media->id;
+				}
+			}
+		} else {
+			$newsid = $media->newsid;
+			if($this->deleteNews($media->id)) {
+				return $this->addNews($newsid);
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * 新增图文消息
+	 * @method addNews
+	 * @since 0.0.1
+	 * @param {int} $newsid 图文素材id
+	 * @return {int}
+	 * @example \Yii::$app->wechat->addNews($newsid);
+	 */
+	public function addNews($newsid) {
+		$news = WechatNews::findOne($newsid);
+		if(!$news) {
+			throw new ErrorException('数据查询失败');
+		} else if($media = WechatNewsMedia::findOne(['appid' => $this->wechat->appid, 'newsid' => $news->id])) {
+			return $media->id;
+		}
+
+		$articles = $news->getArticles($this);
+		$data = $this->getData('/cgi-bin/material/add_news', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode(['articles' => $articles]));
+
+		if($this->errcode == 0) {
+			$media = new WechatNewsMedia;
+			$media->appid = $this->wechat->appid;
+			$media->newsid = $news->id;
+			$media->thumb_mediaids = Json::encode(ArrayHelper::getColumn($articles, 'thumb_mediaid'));
+			$media->media_id = $data['media_id'];
+			if($details = $this->getNews($media->media_id)) {
+				$media->urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'url'));
+				$media->thumb_urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'thumb_url'));
+			}
+			if($media->save()) {
+				return $media->id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * 获取图文消息
+	 * @method getNews
+	 * @since 0.0.1
+	 * @param {string} [$media_id] 媒体文件ID
+	 * @param {boolean} [$all=true] 是否返回所有
+	 * @param {int} [$page=1] 页码
+	 * @param {int} [$count=20] 每页数量
+	 * @return {array}
+	 * @example \Yii::$app->wechat->getNews($media_id, $all, $page, $count);
+	 */
+	public function getNews($media_id = null, $all = true, $page = 1, $count = 20) {
+		return $media_id ? $this->getMaterial($media_id) : $this->getMaterials('news', $all, $page, $count);
+	}
+
+	/**
 	 * 获取素材总数
 	 * @method getMaterialCount
 	 * @since 0.0.1
@@ -90,9 +244,9 @@ class Manager {
 	 * @method getMaterials
 	 * @since 0.0.1
 	 * @param {string} $type 素材的类型
-	 * @param {boolean} $all 是否返回所有
-	 * @param {int} $page 页码
-	 * @param {int} $count 每页数量
+	 * @param {boolean} [$all=true] 是否返回所有
+	 * @param {int} [$page=1] 页码
+	 * @param {int} [$count=20] 每页数量
 	 * @return {array}
 	 * @example \Yii::$app->wechat->getMaterials($type, $all, $page, $count);
 	 */
@@ -178,6 +332,8 @@ class Manager {
 			if($material->type != 'thumb') {
 				throw new ErrorException('素材类型错误');
 			}
+		} else if($media = WechatMedia::findOne(['appid' => $this->wechat->appid, 'materialid' => $materialid, 'expired_at' => 0])) {
+			return $media->id;
 		}
 
 		$postData = ['media' => '@' . $material->localFile];
@@ -200,7 +356,7 @@ class Manager {
 		if($this->errcode == 0) {
 			if($mediaid) {
 				$media->thumb_media_id = $data['media_id'];
-				$media->thumb_material_id = $material->id;
+				$media->thumb_materialid = $material->id;
 				if(isset($data['url'])) {
 					$media->thumb_url = $data['url'];
 				}
@@ -208,7 +364,7 @@ class Manager {
 				$media = new WechatMedia;
 				$media->appid = $this->wechat->appid;
 				$media->media_id = $data['media_id'];
-				$media->material_id = $material->id;
+				$media->materialid = $material->id;
 				if(isset($data['url'])) {
 					$media->url = $data['url'];
 				}
@@ -269,21 +425,19 @@ class Manager {
 		$data = $this->getData('/cgi-bin/media/upload', [
 			'access_token' => $this->getAccessToken(),
 			'type' => $material->type,
-		], [
-			'media' => '@' . $material->localFile,
-		]);
+		], ['media' => '@' . $material->localFile]);
 		$material->cleanTmp();
 
 		if($this->errcode == 0) {
 			if($mediaid) {
 				$media->thumb_media_id = $data['thumb_media_id'];
-				$media->thumb_material_id = $material->id;
+				$media->thumb_materialid = $material->id;
 				$media->thumb_expired_at = $data['created_at'] + $this->effectiveTimeOfTemporaryMaterial;
 			} else {
 				$media = new WechatMedia;
 				$media->appid = $this->wechat->appid;
 				$media->media_id = $data['media_id'];
-				$media->material_id = $material->id;
+				$media->materialid = $material->id;
 				$media->expired_at = $data['created_at'] + $this->effectiveTimeOfTemporaryMaterial;
 			}
 			if($media->save()) {

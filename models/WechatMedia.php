@@ -26,7 +26,7 @@ class WechatMedia extends ActiveRecord {
 	 * @example $this->getMaterial();
 	 */
 	public function getMaterial() {
-		return $this->hasOne(WechatMaterial::classname(), ['id' => 'material_id']);
+		return $this->hasOne(WechatMaterial::classname(), ['id' => 'materialid']);
 	}
 
 	/**
@@ -37,7 +37,7 @@ class WechatMedia extends ActiveRecord {
 	 * @example $this->getThumb();
 	 */
 	public function getThumb() {
-		return $this->hasOne(WechatMaterial::classname(), ['id' => 'thumb_material_id']);
+		return $this->hasOne(WechatMaterial::classname(), ['id' => 'thumb_materialid']);
 	}
 
 }

@@ -6,12 +6,12 @@ use Yii;
 use yii\db\ActiveRecord;
 use yii\behaviors\TimestampBehavior;
 
-class WechatMaterial extends ActiveRecord {
+class WechatNewsImage extends ActiveRecord {
 
 	protected $tmp;
 
 	public static function tableName() {
-		return '{{%wechat_material}}';
+		return '{{%wechat_news_image}}';
 	}
 
 	public function behaviors() {
@@ -28,7 +28,7 @@ class WechatMaterial extends ActiveRecord {
 	 * @example $this->getLocalFile();
 	 */
 	public function getLocalFile() {
-		return preg_match('/^(http|https):\/\//', $this->url) ? $this->downloadFile() : \Yii::getAlias('@webroot' . $this->url);
+		return preg_match('/^(http|https):\/\//', $this->url_source) ? $this->downloadFile() : \Yii::getAlias('@webroot' . $this->url_source);
 	}
 
 	/**
@@ -49,9 +49,9 @@ class WechatMaterial extends ActiveRecord {
 	 * @return {string}
 	 */
 	protected function downloadFile() {
-		$content = @file_get_contents($this->url);
+		$content = @file_get_contents($this->url_source);
 		if($content) {
-			$this->tmp = \Yii::getAlias('@runtime' . DIRECTORY_SEPARATOR . md5($this->url) . '.' . pathinfo($this->url, PATHINFO_EXTENSION));
+			$this->tmp = \Yii::getAlias('@runtime' . DIRECTORY_SEPARATOR . md5($this->url_source) . '.' . pathinfo($this->url_source, PATHINFO_EXTENSION));
 			file_put_contents($this->tmp, $content);
 		}
 
