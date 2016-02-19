@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/18
+ * update: 2016/2/19
  * version: 0.0.1
  */
 
@@ -1016,6 +1016,56 @@ class Manager {
 	}
 
 	/**
+	 * 获取js接口调用配置
+	 * @method getJsapiConfig
+	 * @since 0.0.1
+	 * @param {string} [$url] 调用js接口页面url
+	 * @return {array}
+	 * @example \Yii::$app->wechat->getJsapiConfig($url);
+	 */
+	public function getJsapiConfig($url = null) {
+		$params = [
+			'jsapi_ticket' => $this->getJsapiTicket(),
+			'noncestr' => md5(mt_rand()),
+			'timestamp' => strval(time()),
+			'url' => $url ? : \Yii::$app->request->absoluteUrl,
+		];
+		
+		return [
+			'appId' => $this->wechat->appid,
+			'verifyAppId' => $this->wechat->appid,
+			'verifySignType' => 'sha1',
+			'verifyTimestamp' => $params['timestamp'],
+			'verifyNonceStr' => $params['noncestr'],
+			'verifySignature' => $this->sign($params),
+		];
+	}
+
+	/**
+	 * 获取js接口调用票据
+	 * @method getJsapiTicket
+	 * @since 0.0.1
+	 * @return {string}
+	 * @example \Yii::$app->wechat->getJsapiTicket();
+	 */
+	public function getJsapiTicket() {
+		$time = time();
+		if(empty($this->wechat->jsapi_ticket) || $this->wechat->jsapi_ticket_expired_at < $time) {
+			$data = $this->getData('/cgi-bin/ticket/getticket', [
+				'access_token' => $this->getAccessToken(),
+				'type' => 'jsapi',
+			]);
+			if(isset($data['ticket']) && isset($data['expires_in'])) {
+				$this->wechat->jsapi_ticket = $data['ticket'];
+				$this->wechat->jsapi_ticket_expired_at = $time + $data['expires_in'];
+				$this->wechat->save();
+			}
+		}
+
+		return $this->wechat->jsapi_ticket;
+	}
+
+	/**
 	 * 获取接口调用凭据
 	 * @method getAccessToken
 	 * @since 0.0.1
@@ -1024,7 +1074,7 @@ class Manager {
 	 */
 	public function getAccessToken() {
 		$time = time();
-		if(empty($this->wechat->access_token) || $this->wechat->expired_at < $time) {
+		if(empty($this->wechat->access_token) || $this->wechat->access_token_expired_at < $time) {
 			$data = $this->getData('/cgi-bin/token', [
 				'grant_type' => 'client_credential',
 				'appid' => $this->wechat->appid,
@@ -1032,7 +1082,7 @@ class Manager {
 			]);
 			if(isset($data['access_token']) && isset($data['expires_in'])) {
 				$this->wechat->access_token = $data['access_token'];
-				$this->wechat->expired_at = $time + $data['expires_in'];
+				$this->wechat->access_token_expired_at = $time + $data['expires_in'];
 				$this->wechat->save();
 			}
 		}
@@ -1069,6 +1119,19 @@ class Manager {
 		}
 
 		return implode($strArr);
+	}
+
+	/**
+	 * 签名
+	 * @method sign
+	 * @since 0.0.1
+	 * @param {array} $arr 数据数组
+	 * @return {string}
+	 */
+	private function sign($arr) {
+		ksort($arr);
+
+		return sha1(urldecode(http_build_query($arr)));
 	}
 
 	/**
