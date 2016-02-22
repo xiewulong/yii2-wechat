@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/19
+ * update: 2016/2/22
  * version: 0.0.1
  */
 
@@ -1088,6 +1088,78 @@ class Manager {
 		}
 
 		return $this->wechat->access_token;
+	}
+
+	/**
+	 * 刷新用户网页授权接口调用凭据
+	 * @method refreshUserAccessToken
+	 * @since 0.0.1
+	 * @param {string} $refresh_token access_token刷新token
+	 * @return {array}
+	 * @example \Yii::$app->wechat->refreshUserAccessToken($refresh_token);
+	 */
+	public function refreshUserAccessToken($refresh_token) {
+		$data = $this->getData('/sns/oauth2/refresh_token', [
+			'appid' => $this->wechat->appid,
+			'grant_type' => 'refresh_token',
+			'refresh_token' => $refresh_token,
+		]);
+		
+		return $this->errcode == 0 ? $data : [];
+	}
+
+	/**
+	 * 获取用户网页授权信息
+	 * @method getUserInfo
+	 * @since 0.0.1
+	 * @param {string} $code 通过用户在网页授权后获取的code参数
+	 * @return {array}
+	 * @example \Yii::$app->wechat->getUserInfo($code);
+	 */
+	public function getUserInfo($code) {
+		$data = $this->getData('/sns/oauth2/access_token', [
+			'appid' => $this->wechat->appid,
+			'secret' => $this->wechat->secret,
+			'grant_type' => 'authorization_code',
+			'code' => $code,
+		]);
+
+		$user = [];
+		if($this->errcode == 0) {
+			$user['openid'] = $data['openid'];
+			if($data['scope'] == 'snsapi_userinfo') {
+				$data = $this->getData('/sns/userinfo', [
+					'access_token' => $data['access_token'],
+					'openid' => $user['openid'],
+					'lang' => \Yii::$app->language,
+				]);
+				if($this->errcode == 0) {
+					$user = $data;
+				}
+			}
+		}
+		
+		return $user;
+	}
+
+	/**
+	 * 获取用户网页授权code跳转url
+	 * @method getUserAuthorizeCodeUrl
+	 * @since 0.0.1
+	 * @param {string} [$state] 重定向后会带上state参数, 开发者可以填写a-zA-Z0-9的参数值, 最多128字节
+	 * @param {string} [$scope=snsapi_base] 应用授权作用域: snsapi_base(默认), snsapi_userinfo
+	 * @param {string} [$url] 调用js接口页面url
+	 * @return {string}
+	 * @example \Yii::$app->wechat->getUserAuthorizeCodeUrl($state, $scope, $url);
+	 */
+	public function getUserAuthorizeCodeUrl($state = null, $scope = 'snsapi_base', $url = null) {
+		return 'https://open.weixin.qq.com/connect/oauth2/authorize?' . http_build_query([
+			'appid' => $this->wechat->appid,
+			'response_type' => 'code',
+			'scope' => $scope,
+			'state' => $state,
+			'redirect_uri' => $url ? : \Yii::$app->request->absoluteUrl,
+		]) . '#wechat_redirect';
 	}
 
 	/**

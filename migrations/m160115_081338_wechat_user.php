@@ -27,6 +27,9 @@ class m160115_081338_wechat_user extends \yii\db\Migration {
 			'city' => Schema::TYPE_STRING . '(50) comment "所在城市"',
 			'language' => Schema::TYPE_STRING . '(50) comment "语言"',
 			'headimgurl' => Schema::TYPE_TEXT . ' comment "头像, 尺寸: 0(640*640), 46, 64, 96, 132"',
+			'access_token' => Schema::TYPE_TEXT . ' comment "用户网页授权接口调用凭据"',
+			'access_token_expired_at' => Schema::TYPE_INTEGER . ' not null default 0 comment "access_token过期时间"',
+			'refresh_token' => Schema::TYPE_TEXT . ' comment "access_token刷新token"',
 			'created_at' => Schema::TYPE_INTEGER . ' not null comment "创建时间"',
 			'updated_at' => Schema::TYPE_INTEGER . ' not null comment "更新时间"',
 		], $tableOptions . ' comment="公众号用户"');
