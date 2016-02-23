@@ -7,7 +7,7 @@ use yii\db\ActiveRecord;
 use yii\behaviors\TimestampBehavior;
 use yii\base\ErrorException;
 
-class WechatNews extends ActiveRecord {
+class WechatNewsCache extends ActiveRecord {
 
 	public static function tableName() {
 		return '{{%wechat_news_cache}}';
