@@ -24,7 +24,7 @@ class m160218_011442_wechat_news_cache extends \yii\db\Migration {
 			'list_order' => Schema::TYPE_INTEGER . ' not null default 0 comment "列表排序"',
 			'created_at' => Schema::TYPE_INTEGER . ' not null comment "创建时间"',
 			'updated_at' => Schema::TYPE_INTEGER . ' not null comment "更新时间"',
-		], $tableOptions . ' comment="图文素材缓存表"');
+		], $tableOptions . ' comment="图文素材缓存"');
 	}
 
 	public function down() {
