@@ -18,8 +18,7 @@
     "require": {
         "yiisoft/yii2": "*",
         "bower-asset/weui": "*",
-        "xiewulong/yii2-fileupload": "*",
-        "xiewulong/yii2-xui": "*"
+        "xiewulong/yii2-fileupload": "*"
     },
 	"autoload": {
 		"psr-4": {"yii\\wechat\\": ""}
