@@ -9,7 +9,7 @@
  * version: 0.0.1
  */
 
-namespace wechat\assets;
+namespace yii\wechat\assets;
 
 use Yii;
 use yii\web\AssetBundle;
