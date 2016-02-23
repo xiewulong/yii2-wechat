@@ -17,6 +17,7 @@
     ],
     "require": {
         "yiisoft/yii2": "*",
+        "bower-asset/weui": "*",
         "xiewulong/yii2-fileupload": "*"
     },
 	"autoload": {
