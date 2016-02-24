@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/22
+ * update: 2016/2/24
  * version: 0.0.1
  */
 
@@ -74,6 +74,10 @@ class Manager {
 	 * @example \Yii::$app->wechat->addNewsImage($url_source);
 	 */
 	public function addNewsImage($url_source) {
+		if($image = WechatNewsImage::findOne(['appid' => $this->wechat->appid, 'url_source' => $url_source])) {
+			return $image->id;
+		}
+
 		$image = new WechatNewsImage;
 		$image->url_source = $url_source;
 

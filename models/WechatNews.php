@@ -9,7 +9,7 @@ use yii\base\ErrorException;
 
 class WechatNews extends ActiveRecord {
 
-	public $manager;
+	protected $manager;
 
 	public static function tableName() {
 		return '{{%wechat_news}}';
@@ -25,11 +25,11 @@ class WechatNews extends ActiveRecord {
 	 * 获取一条图文素材
 	 * @method getArticle
 	 * @since 0.0.1
-	 * @param {object} &$manager wechat扩展对象
+	 * @param {object} [&$manager] wechat扩展对象
 	 * @return {array}
 	 * @example $this->getArticles($manager);
 	 */
-	public function getArticle(&$manager) {
+	public function getArticle(&$manager = null) {
 		$this->manager = $manager;
 		$article = $this->json;
 
@@ -45,11 +45,11 @@ class WechatNews extends ActiveRecord {
 	 * 获取整组图文素材
 	 * @method getArticles
 	 * @since 0.0.1
-	 * @param {object} &$manager wechat扩展对象
+	 * @param {object} [&$manager] wechat扩展对象
 	 * @return {array}
 	 * @example $this->getArticles($manager);
 	 */
-	public function getArticles(&$manager) {
+	public function getArticles(&$manager = null) {
 		$this->manager = $manager;
 		if($this->pid) {
 			throw new ErrorException('请选择根图文素材');
@@ -71,18 +71,55 @@ class WechatNews extends ActiveRecord {
 	 * @return {string}
 	 */
 	protected function getJson() {
-		$media = $this->thumbMedia;
-		
-		return [
+		$json = [
 			'title' => $this->title,
 			'author' => $this->author,
-			'thumb_media_id' => $media->media_id,
 			'show_cover_pic' => $this->show_cover_pic,
 			'digest' => $this->digest,
-			'content' => $this->content,
 			'content_source_url' => $this->content_source_url,
-			'thumb_mediaid' => $media->id,
 		];
+		if($this->manager) {
+			$media = $this->thumbMedia;
+			$json['thumb_media_id'] = $media->media_id;
+			$json['thumb_mediaid'] = $media->id;
+			$json['content'] = $this->wechatContent;
+		} else {
+			$json['thumb_url'] = $this->thumbMaterial->url;
+			$json['content'] = $this->content;
+		}
+		
+		return $json;
+	}
+
+	/**
+	 * 转换微信格式content
+	 * @method getWechatContent
+	 * @since 0.0.1
+	 * @return {string}
+	 * @example $this->getWechatContent();
+	 */
+	protected function getWechatContent() {
+		$content = $this->content;
+		if(preg_match_all('/<img.*?[\/]?>/i', $content, $imgs)) {
+			$urls = [];
+			foreach($imgs[0] as $img) {
+				if(preg_match_all('/(?<=src|_src|data-src)(?:\s*=\s*")(.*?)(?=")/i', $img, $srcs) && isset($srcs[1]) && $srcs[1]) {
+					$urls = array_merge($urls, $srcs[1]);
+				}
+			}
+			if($urls) {
+				$urls = array_unique($urls);
+				foreach($urls as $url) {
+					$image = WechatNewsImage::findOne($this->manager->addNewsImage($url));
+					if($image) {
+						$content = str_replace($image->url_source, $image->url, $content);
+					}
+				}
+			}
+		}
+
+		echo $this->content;
+		return $content;
 	}
 
 	/**
@@ -99,6 +136,17 @@ class WechatNews extends ActiveRecord {
 		}
 		
 		return $media;
+	}
+
+	/**
+	 * 获取封面图片素材
+	 * @method getThumbMaterial
+	 * @since 0.0.1
+	 * @return {object}
+	 * @example $this->getThumbMaterial();
+	 */
+	public function getThumbMaterial() {
+		return $this->hasOne(WechatMaterial::classname(), ['id' => 'thumb_materialid']);
 	}
 
 	/**
