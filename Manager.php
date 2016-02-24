@@ -1159,10 +1159,10 @@ class Manager {
 	public function getUserAuthorizeCodeUrl($state = null, $scope = 'snsapi_base', $url = null) {
 		return 'https://open.weixin.qq.com/connect/oauth2/authorize?' . http_build_query([
 			'appid' => $this->wechat->appid,
+			'redirect_uri' => $url ? : \Yii::$app->request->absoluteUrl,
 			'response_type' => 'code',
 			'scope' => $scope,
 			'state' => $state,
-			'redirect_uri' => $url ? : \Yii::$app->request->absoluteUrl,
 		]) . '#wechat_redirect';
 	}
 
