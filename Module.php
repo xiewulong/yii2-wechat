@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2016/1/21
- * update: 2016/2/16
+ * update: 2016/2/26
  * version: 0.0.1
  */
 
@@ -23,6 +23,9 @@ class Module extends \yii\base\Module {
 	public $defaultComponent = 'wechat';
 
 	public $manager;
+
+	//公众号消息调用类
+	public $messageClass;
 
 	private $key;
 
@@ -264,9 +267,9 @@ class Module extends \yii\base\Module {
 		}
 
 		//debug
-		$message->content = json_encode($postObj);
+		//$message->content = json_encode($postObj);
 
-		return $message->save();
+		return $message->save() ? $message->getReply($this->messageClass) : null;
 	}
 
 	/**

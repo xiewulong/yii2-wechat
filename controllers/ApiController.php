@@ -44,9 +44,8 @@ class ApiController extends Controller {
 		}
 
 		//获取数据
-		$postStr = $GLOBALS["HTTP_RAW_POST_DATA"];
 		libxml_disable_entity_loader(true);
-		$postObj = (array) simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
+		$postObj = (array) simplexml_load_string($GLOBALS["HTTP_RAW_POST_DATA"], 'SimpleXMLElement', LIBXML_NOCDATA);
 
 		//确定是否开启安全模式
 		$safeMode = $encrypt_type && $msg_signature;
@@ -58,17 +57,6 @@ class ApiController extends Controller {
 
 		//处理数据并获取回复结果
 		$response = $this->module->handleMessage($postObj);
-
-		//debug
-		$fromUsername = $postObj['FromUserName'];
-		$toUsername = $postObj['ToUserName'];
-		$response = [
-			'ToUserName' => $fromUsername,
-			'FromUserName' => $toUsername,
-			'CreateTime' => time(),
-			'MsgType' => 'text',
-			'Content' => 'FromUserName: ' . $fromUsername . ', ToUserName: ' . $toUsername . ', MsgType: ' . $postObj['MsgType'] . ', Url: ' . \Yii::$app->request->url,
-		];
 
 		//加密回复消息
 		if($safeMode && $response){
