@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/24
+ * update: 2016/2/29
  * version: 0.0.1
  */
 
@@ -37,10 +37,10 @@ class Manager {
 	//提示信息
 	private $messages = false;
 
-	//返回码
+	//错误码
 	public $errcode = 0;
 
-	//返回码说明
+	//错误信息
 	public $errmsg = null;
 
 	//fileupload扩展组件名
@@ -1233,7 +1233,7 @@ class Manager {
 	 * @since 0.0.1
 	 * @param {string} $action 接口名称
 	 * @param {array} $query 参数
-	 * @param {array} [$data] 数据
+	 * @param {string|array} [$data] 数据
 	 * @return {array}
 	 */
 	private function getData($action, $query, $data = null) {
@@ -1303,10 +1303,10 @@ class Manager {
 	 * @method getApiUrl
 	 * @since 0.0.1
 	 * @param {string} $action 接口名称
-	 * @param {array} $query 参数
+	 * @param {array} [$query=[]] 参数
 	 * @return {string}
 	 */
-	private function getApiUrl($action, $query) {
+	private function getApiUrl($action, $query = []) {
 		return $this->api . $action . (empty($query) ? '' : '?' . http_build_query($query));
 	}
 
