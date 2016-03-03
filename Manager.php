@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/2/29
+ * update: 2016/3/3
  * version: 0.0.1
  */
 
@@ -1322,7 +1322,7 @@ class Manager {
 			$this->messages = require(__DIR__ . '/messages.php');
 		}
 
-		return isset($this->messages[$status]) ? $this->messages[$status] : null;
+		return isset($this->messages[$status]) ? $this->messages[$status] : "Error: $status";
 	}
 
 	/**
