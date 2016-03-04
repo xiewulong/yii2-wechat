@@ -5,7 +5,7 @@ namespace yii\wechat\models;
 use Yii;
 use yii\db\ActiveRecord;
 use yii\behaviors\TimestampBehavior;
-use yii\base\ErrorException;
+use yii\helpers\Json;
 
 class WechatNewsCache extends ActiveRecord {
 
@@ -17,6 +17,17 @@ class WechatNewsCache extends ActiveRecord {
 		return [
 			TimestampBehavior::className(),
 		];
+	}
+
+	/**
+	 * 获取图文素材项列表
+	 * @method getItemList
+	 * @since 0.0.1
+	 * @return {array}
+	 * @example $this->getItemList($manager);
+	 */
+	public function getItemList(&$manager = null) {
+		return $this->items ? Json::decode($this->items) : [];
 	}
 
 }

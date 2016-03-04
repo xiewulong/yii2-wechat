@@ -76,7 +76,7 @@ class WechatNewsMedia extends ActiveRecord {
 	 * @example $this->getThumbUrlList();
 	 */
 	public function getThumbUrlList() {
-		return $this->urls ? Json::decode($this->thumb_urls) : [];
+		return $this->thumb_urls ? Json::decode($this->thumb_urls) : [];
 	}
 
 }

@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/3/3
+ * update: 2016/3/4
  * version: 0.0.1
  */
 
@@ -128,8 +128,8 @@ class Manager {
 			throw new ErrorException('数据查询失败');
 		}
 
-		$articles = $media->news->getArticles($this);
-		if(count($articles) == count($media->thumbMediaidList)) {
+		if($media->news->count_item == count($media->thumbMediaidList)) {
+			$articles = $media->news->getArticles($this);
 			$thumb_mediaids = [];
 			$success = true;
 			foreach($articles as $index => $article) {
