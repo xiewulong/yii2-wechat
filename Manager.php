@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/3/4
+ * update: 2016/3/15
  * version: 0.0.1
  */
 
@@ -31,6 +31,9 @@ class Manager {
 	//微信接口网关
 	private $api = 'https://api.weixin.qq.com';
 
+	//默认appid
+	public $defaultAppid;
+
 	//公众号
 	public $wechat;
 
@@ -48,6 +51,18 @@ class Manager {
 
 	//临时素材有效时长, 3天
 	private $effectiveTimeOfTemporaryMaterial = 259200;
+
+	/**
+	 * 构造器
+	 * @method __construct
+	 * @since 0.0.1
+	 * @return {none}
+	 */
+	public function __construct() {
+		if($this->defaultAppid) {
+			$this->setApp($this->defaultAppid);
+		}
+	}
 
 	/**
 	 * 设置全局公众号
