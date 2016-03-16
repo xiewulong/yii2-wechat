@@ -101,12 +101,12 @@ class Manager {
 	 * 删除图文消息
 	 * @method deleteNews
 	 * @since 0.0.1
-	 * @param {int} $newsmediaid 图文消息id
+	 * @param {int} $news_media_id 图文消息id
 	 * @return {boolean}
-	 * @example \Yii::$app->wechat->deleteNews($newsmediaid);
+	 * @example \Yii::$app->wechat->deleteNews($news_media_id);
 	 */
-	public function deleteNews($newsmediaid) {
-		$media = WechatNewsMedia::findOne($newsmediaid);
+	public function deleteNews($news_media_id) {
+		$media = WechatNewsMedia::findOne($news_media_id);
 		if(!$media) {
 			throw new ErrorException('数据查询失败');
 		}
