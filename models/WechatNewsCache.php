@@ -24,9 +24,9 @@ class WechatNewsCache extends ActiveRecord {
 	 * @method getItemList
 	 * @since 0.0.1
 	 * @return {array}
-	 * @example $this->getItemList($manager);
+	 * @example $this->getItemList();
 	 */
-	public function getItemList(&$manager = null) {
+	public function getItemList() {
 		return $this->items ? Json::decode($this->items) : [];
 	}
 

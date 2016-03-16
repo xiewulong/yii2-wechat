@@ -35,7 +35,7 @@ class WechatNewsItem extends ActiveRecord {
 
 		return [
 			'index' => $this->index,
-			'thumb_mediaid' => array_pop($article),
+			'thumb_material_media_id' => $article['thumb_material_media_id'],
 			'articles' => $article,
 		];
 
@@ -56,9 +56,9 @@ class WechatNewsItem extends ActiveRecord {
 			'content_source_url' => $this->content_source_url,
 		];
 		if($this->manager) {
-			$media = $this->thumbMedia;
-			$json['thumb_media_id'] = $media->media_id;
-			$json['thumb_mediaid'] = $media->id;
+			$materialMedia = $this->thumbMaterialMedia;
+			$json['thumb_media_id'] = $materialMedia->media_id;
+			$json['thumb_material_media_id'] = $materialMedia->id;
 			$json['content'] = $this->wechatContent;
 		} else {
 			$json['thumb_url'] = $this->thumbMaterial->url;
@@ -100,15 +100,15 @@ class WechatNewsItem extends ActiveRecord {
 
 	/**
 	 * 获取缩略图媒体
-	 * @method getThumbMedia
+	 * @method getThumbMaterialMedia
 	 * @since 0.0.1
 	 * @return {object}
-	 * @example $this->getThumbMedia();
+	 * @example $this->getThumbMaterialMedia();
 	 */
-	protected function getThumbMedia() {
-		$media = WechatMedia::findOne(['appid' => $this->manager->wechat->appid, 'materialid' => $this->thumb_materialid, 'expired_at' => 0]);
+	protected function getThumbMaterialMedia() {
+		$media = WechatMaterialMedia::findOne(['appid' => $this->manager->app->appid, 'material_id' => $this->thumb_material_id, 'expired_at' => 0]);
 		if(!$media) {
-			$media = WechatMedia::findOne($this->manager->addMaterial($this->thumb_materialid));
+			$media = WechatMaterialMedia::findOne($this->manager->addMaterial($this->thumb_material_id));
 		}
 		
 		return $media;
@@ -122,7 +122,7 @@ class WechatNewsItem extends ActiveRecord {
 	 * @example $this->getThumbMaterial();
 	 */
 	public function getThumbMaterial() {
-		return $this->hasOne(WechatMaterial::classname(), ['id' => 'thumb_materialid']);
+		return $this->hasOne(WechatMaterial::classname(), ['id' => 'thumb_material_id']);
 	}
 
 	/**
@@ -133,7 +133,7 @@ class WechatNewsItem extends ActiveRecord {
 	 * @example $this->getIndex();
 	 */
 	public function getIndex() {
-		return static::find()->where("newsid = $this->newsid")->andWhere("list_order < $this->list_order or (list_order = $this->list_order and created_at < $this->created_at) or (list_order = $this->list_order and created_at = $this->created_at and id < $this->id)")->count();
+		return static::find()->where("news_id = $this->news_id")->andWhere("list_order < $this->list_order or (list_order = $this->list_order and created_at < $this->created_at) or (list_order = $this->list_order and created_at = $this->created_at and id < $this->id)")->count();
 	}
 
 }

@@ -12,7 +12,7 @@ class m160218_011442_wechat_news_cache extends \yii\db\Migration {
 
 		$this->createTable('{{%wechat_news_cache}}', [
 			'id' => Schema::TYPE_PK . ' comment "id"',
-			'newsid' => Schema::TYPE_INTEGER . ' comment "图文素材id"',
+			'news_id' => Schema::TYPE_INTEGER . ' comment "图文素材id"',
 			'items' => Schema::TYPE_TEXT . ' comment "图文素材项(json)"',
 			'created_at' => Schema::TYPE_INTEGER . ' not null comment "创建时间"',
 			'updated_at' => Schema::TYPE_INTEGER . ' not null comment "更新时间"',

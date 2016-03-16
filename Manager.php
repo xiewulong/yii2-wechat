@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/3/15
+ * update: 2016/3/16
  * version: 0.0.1
  */
 
@@ -21,7 +21,7 @@ use yii\wechat\models\WechatUser;
 use yii\wechat\models\WechatUserGroup;
 use yii\wechat\models\WechatMenu;
 use yii\wechat\models\WechatMaterial;
-use yii\wechat\models\WechatMedia;
+use yii\wechat\models\WechatMaterialMedia;
 use yii\wechat\models\WechatNews;
 use yii\wechat\models\WechatNewsMedia;
 use yii\wechat\models\WechatNewsImage;
@@ -32,7 +32,7 @@ class Manager {
 	private $api = 'https://api.weixin.qq.com';
 
 	//公众号
-	public $wechat;
+	public $app;
 
 	//提示信息
 	private $messages = false;
@@ -58,7 +58,7 @@ class Manager {
 	 * @example \Yii::$app->wechat->setApp($appid);
 	 */
 	public function setApp($appid) {
-		if(!$this->wechat = Wechat::findOne($appid)) {
+		if(!$this->app = Wechat::findOne($appid)) {
 			throw new ErrorException('Without the wechat app');
 		}
 
@@ -74,7 +74,7 @@ class Manager {
 	 * @example \Yii::$app->wechat->addNewsImage($url_source);
 	 */
 	public function addNewsImage($url_source) {
-		if($image = WechatNewsImage::findOne(['appid' => $this->wechat->appid, 'url_source' => $url_source])) {
+		if($image = WechatNewsImage::findOne(['appid' => $this->app->appid, 'url_source' => $url_source])) {
 			return $image->id;
 		}
 
@@ -87,7 +87,7 @@ class Manager {
 		$image->cleanTmp();
 
 		if($this->errcode == 0) {
-			$image->appid = $this->wechat->appid;
+			$image->appid = $this->app->appid;
 			$image->url = $data['url'];
 			if($image->save()) {
 				return $image->id;
@@ -118,22 +118,22 @@ class Manager {
 	 * 修改图文消息
 	 * @method updateNews
 	 * @since 0.0.1
-	 * @param {int} $newsmediaid 图文消息id
+	 * @param {int} $news_media_id 图文消息id
 	 * @return {int}
-	 * @example \Yii::$app->wechat->updateNews($newsmediaid);
+	 * @example \Yii::$app->wechat->updateNews($news_media_id);
 	 */
-	public function updateNews($newsmediaid) {
-		$media = WechatNewsMedia::findOne($newsmediaid);
-		if(!$media) {
+	public function updateNews($news_media_id) {
+		$newsMedia = WechatNewsMedia::findOne($news_media_id);
+		if(!$newsMedia) {
 			throw new ErrorException('数据查询失败');
 		}
 
-		if($media->news->count_item == count($media->thumbMediaidList)) {
+		if($newsMedia->news->count_item == count($newsMedia->thumbMaterialMediaIdList)) {
 			$articles = $media->news->getArticles($this);
-			$thumb_mediaids = [];
+			$thumb_material_media_ids = [];
 			$success = true;
 			foreach($articles as $index => $article) {
-				$thumb_mediaids[] = $article['thumb_mediaid'];
+				$thumb_material_media_ids[] = $article['thumb_material_media_id'];
 				$data = $this->getData('/cgi-bin/material/update_news', [
 					'access_token' => $this->getAccessToken(),
 				], Json::encode([
@@ -147,7 +147,7 @@ class Manager {
 				}
 			}
 			if($success) {
-				$media->thumb_mediaids = Json::encode($thumb_mediaids);
+				$media->thumb_material_media_ids = Json::encode($thumb_material_media_ids);
 				if($details = $this->getNews($media->media_id)) {
 					$media->urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'url'));
 					$media->thumb_urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'thumb_url'));
@@ -170,16 +170,16 @@ class Manager {
 	 * 新增图文消息
 	 * @method addNews
 	 * @since 0.0.1
-	 * @param {int} $newsid 图文素材id
+	 * @param {int} $news_id 图文素材id
 	 * @return {int}
-	 * @example \Yii::$app->wechat->addNews($newsid);
+	 * @example \Yii::$app->wechat->addNews($news_id);
 	 */
-	public function addNews($newsid) {
-		$news = WechatNews::findOne($newsid);
+	public function addNews($news_id) {
+		$news = WechatNews::findOne($news_id);
 		if(!$news) {
 			throw new ErrorException('数据查询失败');
-		} else if($media = WechatNewsMedia::findOne(['appid' => $this->wechat->appid, 'newsid' => $news->id])) {
-			return $media->id;
+		} else if($newsMedia = WechatNewsMedia::findOne(['appid' => $this->app->appid, 'news_id' => $news->id])) {
+			return $newsMedia->id;
 		}
 
 		$articles = $news->getArticles($this);
@@ -188,17 +188,17 @@ class Manager {
 		], Json::encode(['articles' => $articles]));
 
 		if($this->errcode == 0) {
-			$media = new WechatNewsMedia;
-			$media->appid = $this->wechat->appid;
-			$media->newsid = $news->id;
-			$media->thumb_mediaids = Json::encode(ArrayHelper::getColumn($articles, 'thumb_mediaid'));
-			$media->media_id = $data['media_id'];
-			if($details = $this->getNews($media->media_id)) {
-				$media->urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'url'));
-				$media->thumb_urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'thumb_url'));
+			$newsMedia = new WechatNewsMedia;
+			$newsMedia->appid = $this->app->appid;
+			$newsMedia->news_id = $news->id;
+			$newsMedia->media_id = $data['media_id'];
+			$newsMedia->thumb_material_media_ids = Json::encode(ArrayHelper::getColumn($articles, 'thumb_material_media_id'));
+			if($details = $this->getNews($newsMedia->media_id)) {
+				$newsMedia->urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'url'));
+				$newsMedia->thumb_urls = Json::encode(ArrayHelper::getColumn($details['news_item'], 'thumb_url'));
 			}
-			if($media->save()) {
-				return $media->id;
+			if($newsMedia->save()) {
+				return $newsMedia->id;
 			}
 		}
 
@@ -233,11 +233,11 @@ class Manager {
 		]);
 
 		if($this->errcode == 0) {
-			$this->wechat->count_image = $data['image_count'];
-			$this->wechat->count_voice = $data['voice_count'];
-			$this->wechat->count_video = $data['video_count'];
-			$this->wechat->count_news = $data['news_count'];
-			return $this->wechat->save();
+			$this->app->count_image = $data['image_count'];
+			$this->app->count_voice = $data['voice_count'];
+			$this->app->count_video = $data['video_count'];
+			$this->app->count_news = $data['news_count'];
+			return $this->app->save();
 		}
 
 		return false;
@@ -314,30 +314,16 @@ class Manager {
 	 * 新增永久素材
 	 * @method addMaterial
 	 * @since 0.0.1
-	 * @param {int} $materialid 素材数据id
-	 * @param {int} [$mediaid] 媒体数据id, 如果设置此值则为上传缩略图
+	 * @param {int} $material_id 素材id
 	 * @return {int}
-	 * @example \Yii::$app->wechat->addMaterial($materialid, $mediaid);
+	 * @example \Yii::$app->wechat->addMaterial($material_id);
 	 */
-	public function addMaterial($materialid, $mediaid = null) {
-		$material = WechatMaterial::findOne($materialid);
+	public function addMaterial($material_id) {
+		$material = WechatMaterial::findOne($material_id);
 		if(!$material) {
 			throw new ErrorException('数据查询失败');
-		}
-
-		if($mediaid) {
-			$media = WechatMedia::findOne($mediaid);
-			if(!$media) {
-				throw new ErrorException('数据查询失败');
-			}
-			if($media->expired_at > 0) {
-				throw new ErrorException('不能为临时素材添加永久缩略图素材');
-			}
-			if($material->type != 'thumb') {
-				throw new ErrorException('素材类型错误');
-			}
-		} else if($media = WechatMedia::findOne(['appid' => $this->wechat->appid, 'materialid' => $materialid, 'expired_at' => 0])) {
-			return $media->id;
+		}else if($materialMedia = WechatMaterialMedia::findOne(['appid' => $this->app->appid, 'material_id' => $material->id, 'expired_at' => 0])) {
+			return $materialMedia->id;
 		}
 
 		$postData = ['media' => '@' . $material->localFile];
@@ -358,23 +344,15 @@ class Manager {
 		$material->cleanTmp();
 
 		if($this->errcode == 0) {
-			if($mediaid) {
-				$media->thumb_media_id = $data['media_id'];
-				$media->thumb_materialid = $material->id;
-				if(isset($data['url'])) {
-					$media->thumb_url = $data['url'];
-				}
-			} else {
-				$media = new WechatMedia;
-				$media->appid = $this->wechat->appid;
-				$media->media_id = $data['media_id'];
-				$media->materialid = $material->id;
-				if(isset($data['url'])) {
-					$media->url = $data['url'];
-				}
+			$materialMedia = new WechatMaterialMedia;
+			$materialMedia->appid = $this->app->appid;
+			$materialMedia->material_id = $material->id;
+			$materialMedia->media_id = $data['media_id'];
+			if(isset($data['url'])) {
+				$materialMedia->url = $data['url'];
 			}
-			if($media->save()) {
-				return $media->id;
+			if($materialMedia->save()) {
+				return $materialMedia->id;
 			}
 		}
 
@@ -402,28 +380,14 @@ class Manager {
 	 * 新增临时素材
 	 * @method addMedia
 	 * @since 0.0.1
-	 * @param {int} $materialid 素材数据id
-	 * @param {int} [$mediaid] 媒体数据id, 如果设置此值则为上传缩略图
+	 * @param {int} $material_id 素材id
 	 * @return {int}
-	 * @example \Yii::$app->wechat->addMedia($materialid, $mediaid);
+	 * @example \Yii::$app->wechat->addMedia($material_id);
 	 */
-	public function addMedia($materialid, $mediaid = null) {
-		$material = WechatMaterial::findOne($materialid);
+	public function addMedia($material_id) {
+		$material = WechatMaterial::findOne($material_id);
 		if(!$material) {
 			throw new ErrorException('数据查询失败');
-		}
-
-		if($mediaid) {
-			$media = WechatMedia::findOne($mediaid);
-			if(!$media) {
-				throw new ErrorException('数据查询失败');
-			}
-			if($media->expired_at == 0) {
-				throw new ErrorException('不能为永久素材添加临时缩略图素材');
-			}
-			if($material->type != 'thumb') {
-				throw new ErrorException('素材类型错误');
-			}
 		}
 
 		$data = $this->getData('/cgi-bin/media/upload', [
@@ -433,19 +397,13 @@ class Manager {
 		$material->cleanTmp();
 
 		if($this->errcode == 0) {
-			if($mediaid) {
-				$media->thumb_media_id = $data['thumb_media_id'];
-				$media->thumb_materialid = $material->id;
-				$media->thumb_expired_at = $data['created_at'] + $this->effectiveTimeOfTemporaryMaterial;
-			} else {
-				$media = new WechatMedia;
-				$media->appid = $this->wechat->appid;
-				$media->media_id = $data['media_id'];
-				$media->materialid = $material->id;
-				$media->expired_at = $data['created_at'] + $this->effectiveTimeOfTemporaryMaterial;
-			}
-			if($media->save()) {
-				return $media->id;
+			$materialMedia = new WechatMaterialMedia;
+			$materialMedia->appid = $this->app->appid;
+			$materialMedia->material_id = $material->id;
+			$materialMedia->media_id = $data['media_id'];
+			$materialMedia->expired_at = $data['created_at'] + $this->effectiveTimeOfTemporaryMaterial;
+			if($materialMedia->save()) {
+				return $materialMedia->id;
 			}
 		}
 
@@ -496,7 +454,7 @@ class Manager {
 			'access_token' => $this->getAccessToken(),
 		], Json::encode(['menuid' => $menuid]));
 
-		return $this->errcode == 0 && WechatMenu::deleteAll(['appid' => $this->wechat->appid, 'conditional' => 1, 'menuid' => $menuid]);
+		return $this->errcode == 0 && WechatMenu::deleteAll(['appid' => $this->app->appid, 'conditional' => 1, 'menuid' => $menuid]);
 	}
 
 	/**
@@ -511,7 +469,7 @@ class Manager {
 			'access_token' => $this->getAccessToken(),
 		]);
 
-		return $this->errcode == 0 && WechatMenu::deleteAll(['appid' => $this->wechat->appid]);
+		return $this->errcode == 0 && WechatMenu::deleteAll(['appid' => $this->app->appid]);
 	}
 
 	/**
@@ -524,7 +482,7 @@ class Manager {
 	public function updateMenu() {
 		$data = $this->getData('/cgi-bin/menu/create', [
 			'access_token' => $this->getAccessToken(),
-		], Json::encode(['button' => WechatMenu::getMenu($this->wechat->appid)]));
+		], Json::encode(['button' => WechatMenu::getMenu($this->app->appid)]));
 
 		return $this->errcode == 0;
 	}
@@ -552,7 +510,7 @@ class Manager {
 			$postData['menuid'] = $data['menuid'];
 		}
 
-		return $this->errcode == 0 && WechatMenu::createMenu($this->wechat->appid, $postData);
+		return $this->errcode == 0 && WechatMenu::createMenu($this->app->appid, $postData);
 	}
 
 	/**
@@ -565,11 +523,11 @@ class Manager {
 	public function refreshMenu() {
 		$data = $this->getMenu();
 		if($data && isset($data['menu']) && isset($data['menu']['button'])) {
-			WechatMenu::deleteAll(['appid' => $this->wechat->appid]);
-			WechatMenu::addMenu($this->wechat->appid, $data['menu']['button'], isset($data['menu']['menuid']) ? $data['menu']['menuid'] : null);
+			WechatMenu::deleteAll(['appid' => $this->app->appid]);
+			WechatMenu::addMenu($this->app->appid, $data['menu']['button'], isset($data['menu']['menuid']) ? $data['menu']['menuid'] : null);
 			if(isset($data['conditionalmenu'])) {
 				foreach($data['conditionalmenu'] as $conditionalmenu) {
-					WechatMenu::addMenu($this->wechat->appid, $conditionalmenu['button'], $conditionalmenu['menuid'], $conditionalmenu['matchrule']);
+					WechatMenu::addMenu($this->app->appid, $conditionalmenu['button'], $conditionalmenu['menuid'], $conditionalmenu['matchrule']);
 				}
 			}
 
@@ -753,7 +711,7 @@ class Manager {
 		$group = null;
 		if(isset($data['group'])) {
 			$group = new WechatUserGroup;
-			$group->appid = $this->wechat->appid;
+			$group->appid = $this->app->appid;
 			$group->gid = $data['group']['id'];
 			$group->name = $data['group']['name'];
 			$group->save();
@@ -776,10 +734,10 @@ class Manager {
 
 		if(isset($data['groups'])) {
 			foreach($data['groups'] as $_group) {
-				$group = WechatUserGroup::findOne(['appid' => $this->wechat->appid, 'gid' => $_group['id']]);
+				$group = WechatUserGroup::findOne(['appid' => $this->app->appid, 'gid' => $_group['id']]);
 				if(!$group) {
 					$group = new WechatUserGroup;
-					$group->appid = $this->wechat->appid;
+					$group->appid = $this->app->appid;
 					$group->gid = $_group['id'];
 				}
 				$group->name = $_group['name'];
@@ -893,7 +851,7 @@ class Manager {
 	 * @example \Yii::$app->wechat->refreshUsers($page);
 	 */
 	public function refreshUsers($page = 1) {
-		$query = WechatUser::find()->where(['appid' => $this->wechat->appid])->select('openid');
+		$query = WechatUser::find()->where(['appid' => $this->app->appid])->select('openid');
 
 		$pageSize = 100;
 		$pagination = new Pagination([
@@ -920,10 +878,10 @@ class Manager {
 			], Json::encode($user_list));
 			if(isset($data['user_info_list'])) {
 				foreach($data['user_info_list'] as $_user) {
-					$user = WechatUser::findOne(['appid' => $this->wechat->appid, 'openid' => $_user['openid']]);
+					$user = WechatUser::findOne(['appid' => $this->app->appid, 'openid' => $_user['openid']]);
 					if(!$user) {
 						$user = new WechatUser;
-						$user->appid = $this->wechat->appid;
+						$user->appid = $this->app->appid;
 						$user->openid = $_user['openid'];
 					}
 					$user->subscribe = $_user['subscribe'];
@@ -966,14 +924,14 @@ class Manager {
 
 		if(isset($data['count']) && $data['count'] && isset($data['data']) && isset($data['data']['openid'])) {
 			foreach($data['data']['openid'] as $openid) {
-				if($user = WechatUser::findOne(['appid' => $this->wechat->appid, 'openid' => $openid])) {
+				if($user = WechatUser::findOne(['appid' => $this->app->appid, 'openid' => $openid])) {
 					if($user->subscribe == 0) {
 						$user->subscribe = 1;
 						$user->save();
 					}
 				} else {
 					$user = new WechatUser;
-					$user->appid = $this->wechat->appid;
+					$user->appid = $this->app->appid;
 					$user->openid = $openid;
 					$user->subscribe = 1;
 					$user->save();
@@ -992,11 +950,11 @@ class Manager {
 	 * @example \Yii::$app->wechat->getCallbackIp();
 	 */
 	public function getCallbackIp() {
-		if(empty($this->wechat->ip_list)) {
+		if(empty($this->app->ip_list)) {
 			$this->refreshIpList();
 		}
 
-		return $this->wechat->ipListArray;
+		return $this->app->ipListArray;
 	}
 
 	/**
@@ -1012,8 +970,8 @@ class Manager {
 		]);
 
 		if(isset($data['ip_list'])) {
-			$this->wechat->ip_list = Json::encode($data['ip_list']);
-			return $this->wechat->save();
+			$this->app->ip_list = Json::encode($data['ip_list']);
+			return $this->app->save();
 		}
 		
 		return $this->errcode == 0;
@@ -1036,8 +994,8 @@ class Manager {
 		];
 		
 		return [
-			'appId' => $this->wechat->appid,
-			'verifyAppId' => $this->wechat->appid,
+			'appId' => $this->app->appid,
+			'verifyAppId' => $this->app->appid,
 			'verifySignType' => 'sha1',
 			'verifyTimestamp' => $params['timestamp'],
 			'verifyNonceStr' => $params['noncestr'],
@@ -1054,19 +1012,19 @@ class Manager {
 	 */
 	public function getJsapiTicket() {
 		$time = time();
-		if(empty($this->wechat->jsapi_ticket) || $this->wechat->jsapi_ticket_expired_at < $time) {
+		if(empty($this->app->jsapi_ticket) || $this->app->jsapi_ticket_expired_at < $time) {
 			$data = $this->getData('/cgi-bin/ticket/getticket', [
 				'access_token' => $this->getAccessToken(),
 				'type' => 'jsapi',
 			]);
 			if(isset($data['ticket']) && isset($data['expires_in'])) {
-				$this->wechat->jsapi_ticket = $data['ticket'];
-				$this->wechat->jsapi_ticket_expired_at = $time + $data['expires_in'];
-				$this->wechat->save();
+				$this->app->jsapi_ticket = $data['ticket'];
+				$this->app->jsapi_ticket_expired_at = $time + $data['expires_in'];
+				$this->app->save();
 			}
 		}
 
-		return $this->wechat->jsapi_ticket;
+		return $this->app->jsapi_ticket;
 	}
 
 	/**
@@ -1078,20 +1036,20 @@ class Manager {
 	 */
 	public function getAccessToken() {
 		$time = time();
-		if(empty($this->wechat->access_token) || $this->wechat->access_token_expired_at < $time) {
+		if(empty($this->app->access_token) || $this->app->access_token_expired_at < $time) {
 			$data = $this->getData('/cgi-bin/token', [
 				'grant_type' => 'client_credential',
-				'appid' => $this->wechat->appid,
-				'secret' => $this->wechat->secret,
+				'appid' => $this->app->appid,
+				'secret' => $this->app->secret,
 			]);
 			if(isset($data['access_token']) && isset($data['expires_in'])) {
-				$this->wechat->access_token = $data['access_token'];
-				$this->wechat->access_token_expired_at = $time + $data['expires_in'];
-				$this->wechat->save();
+				$this->app->access_token = $data['access_token'];
+				$this->app->access_token_expired_at = $time + $data['expires_in'];
+				$this->app->save();
 			}
 		}
 
-		return $this->wechat->access_token;
+		return $this->app->access_token;
 	}
 
 	/**
@@ -1104,7 +1062,7 @@ class Manager {
 	 */
 	public function refreshUserAccessToken($refresh_token) {
 		$data = $this->getData('/sns/oauth2/refresh_token', [
-			'appid' => $this->wechat->appid,
+			'appid' => $this->app->appid,
 			'grant_type' => 'refresh_token',
 			'refresh_token' => $refresh_token,
 		]);
@@ -1122,8 +1080,8 @@ class Manager {
 	 */
 	public function getUserInfo($code) {
 		$data = $this->getData('/sns/oauth2/access_token', [
-			'appid' => $this->wechat->appid,
-			'secret' => $this->wechat->secret,
+			'appid' => $this->app->appid,
+			'secret' => $this->app->secret,
 			'grant_type' => 'authorization_code',
 			'code' => $code,
 		]);
@@ -1158,7 +1116,7 @@ class Manager {
 	 */
 	public function getUserAuthorizeCodeUrl($state = null, $scope = 'snsapi_base', $url = null) {
 		return 'https://open.weixin.qq.com/connect/oauth2/authorize?' . http_build_query([
-			'appid' => $this->wechat->appid,
+			'appid' => $this->app->appid,
 			'redirect_uri' => $url ? : \Yii::$app->request->absoluteUrl,
 			'response_type' => 'code',
 			'scope' => $scope,

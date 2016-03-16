@@ -18,7 +18,7 @@ class m160119_070234_wechat_message extends \yii\db\Migration {
 			'to_user_name' => Schema::TYPE_STRING . '(50) not null comment "ToUserName, 开发者微信号"',
 			'from_user_name' => Schema::TYPE_STRING . ' not null comment "FromUserName, 发送方帐号, 即openid"',
 			'create_time' => Schema::TYPE_INTEGER . ' not null default 0 comment "CreateTime, 消息创建时间"',
-			'msg_type' => Schema::TYPE_STRING . '(50) not null comment "MsgType, 消息类型: text(文本消息), image(图片消息), voice(语音消息), video(视频消息), shortvideo(小视频消息), location(地理位置消息), link(链接消息), event(事件)"',
+			'msg_type' => Schema::TYPE_STRING . '(50) not null comment "MsgType, 消息类型: text(文本), image(图片), voice(语音), video(视频), shortvideo(小视频, 仅接收), location(地理位置, 仅接收), link(链接, 仅接收), event(事件, 仅接收), music(音乐, 仅回复), news(图文, 仅回复)"',
 			'msg_id' => Schema::TYPE_STRING . ' comment "MsgId, 消息id"',
 			'media_id' => Schema::TYPE_STRING . ' comment "MediaId, 媒体id"',
 			'media_url' => Schema::TYPE_TEXT . ' comment "媒体url(非微信端)"',

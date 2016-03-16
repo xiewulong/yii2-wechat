@@ -6,10 +6,10 @@ use Yii;
 use yii\db\ActiveRecord;
 use yii\behaviors\TimestampBehavior;
 
-class WechatMedia extends ActiveRecord {
+class WechatMaterialMedia extends ActiveRecord {
 
 	public static function tableName() {
-		return '{{%wechat_media}}';
+		return '{{%wechat_material_media}}';
 	}
 
 	public function behaviors() {
@@ -26,18 +26,7 @@ class WechatMedia extends ActiveRecord {
 	 * @example $this->getMaterial();
 	 */
 	public function getMaterial() {
-		return $this->hasOne(WechatMaterial::classname(), ['id' => 'materialid']);
-	}
-
-	/**
-	 * 获取缩略图素材
-	 * @method getThumb
-	 * @since 0.0.1
-	 * @return {object}
-	 * @example $this->getThumb();
-	 */
-	public function getThumb() {
-		return $this->hasOne(WechatMaterial::classname(), ['id' => 'thumb_materialid']);
+		return $this->hasOne(WechatMaterial::classname(), ['id' => 'material_id']);
 	}
 
 }

@@ -27,34 +27,34 @@ class WechatNewsMedia extends ActiveRecord {
 	 * @example $this->getNews();
 	 */
 	public function getNews() {
-		return $this->hasOne(WechatNews::classname(), ['id' => 'newsid']);
+		return $this->hasOne(WechatNews::classname(), ['id' => 'news_id']);
 	}
 
 	/**
-	 * 获取封面图片媒体列表
-	 * @method getThumbMediaList
+	 * 获取封面图片素材媒体列表
+	 * @method getThumbMaterialMediaList
 	 * @since 0.0.1
 	 * @return {array}
-	 * @example $this->getThumbMediaList();
+	 * @example $this->getThumbMaterialMediaList();
 	 */
-	public function getThumbMediaList() {
-		$medias = [];
-		foreach($this->thumbMediaidList as $thumb_mediaid) {
-			$medias[$thumb_mediaid] = WechatMedia::findOne($thumb_mediaid);
+	public function getThumbMaterialMediaList() {
+		$materialMedias = [];
+		foreach($this->thumbMaterialMediaIdList as $thumb_material_media_id) {
+			$materialMedias[$thumb_material_media_id] = WechatMaterialMedia::findOne($thumb_material_media_id);
 		}
 
-		return $medias;
+		return $materialMedias;
 	}
 
 	/**
-	 * 获取封面图片媒体id列表
-	 * @method getThumbMediaidList
+	 * 获取封面图片素材媒体id列表
+	 * @method getThumbMaterialMediaIdList
 	 * @since 0.0.1
 	 * @return {array}
-	 * @example $this->getThumbMediaidList();
+	 * @example $this->getThumbMaterialMediaIdList();
 	 */
-	public function getThumbMediaidList() {
-		return Json::decode($this->thumb_mediaids);
+	public function getThumbMaterialMediaIdList() {
+		return Json::decode($this->thumb_material_media_ids);
 	}
 
 	/**

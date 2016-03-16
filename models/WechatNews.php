@@ -45,7 +45,7 @@ class WechatNews extends ActiveRecord {
 	 * @example $this->getItems();
 	 */
 	public function getItems() {
-		return $this->hasMany(WechatNewsItem::classname(), ['newsid' => 'id'])->orderby('list_order, created_at, id');
+		return $this->hasMany(WechatNewsItem::classname(), ['news_id' => 'id'])->orderby('list_order, created_at, id');
 	}
 
 }
