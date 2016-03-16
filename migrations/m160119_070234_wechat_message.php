@@ -48,7 +48,8 @@ class m160119_070234_wechat_message extends \yii\db\Migration {
 			'pic_list' => Schema::TYPE_TEXT . ' comment "PicList, 图片列表(json)"',
 			'poiname' => Schema::TYPE_STRING . ' comment "Poiname, 朋友圈POI的名字"',
 			'music_url' => Schema::TYPE_TEXT . ' comment "MusicURL, 音乐链接(非微信端)"',
-			'hq_music_url' => Schema::TYPE_TEXT . ' comment "HQMusicUrl, 高质量音乐链接, wifi环境优先使用该链接播放音乐(非微信端)"',
+			'hq_music_url' => Schema::TYPE_TEXT . ' comment "HQMusicUrl, 高质量音乐链接(非微信端), wifi环境优先使用该链接播放音乐"',
+			'articles' => Schema::TYPE_TEXT . ' comment "Articles, 多条图文消息信息(json), 默认第一个item为大图, 注意: 如果图文数超过10, 则将会无响应"',
 			'created_at' => Schema::TYPE_INTEGER . ' not null comment "创建时间"',
 			'updated_at' => Schema::TYPE_INTEGER . ' not null comment "更新时间"',
 		], $tableOptions . ' comment="公众号消息"');

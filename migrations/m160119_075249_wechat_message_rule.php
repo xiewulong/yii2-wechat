@@ -22,7 +22,7 @@ class m160119_075249_wechat_message_rule extends \yii\db\Migration {
 			'title' => Schema::TYPE_STRING . ' comment "Title, 音乐标题"',
 			'description' => Schema::TYPE_STRING . ' comment "Description, 音乐描述"',
 			'music_url' => Schema::TYPE_TEXT . ' comment "MusicURL, 音乐链接(非微信端)"',
-			'hq_music_url' => Schema::TYPE_TEXT . ' comment "HQMusicUrl, 高质量音乐链接, wifi环境优先使用该链接播放音乐(非微信端)"',
+			'hq_music_url' => Schema::TYPE_TEXT . ' comment "HQMusicUrl, 高质量音乐链接(非微信端), wifi环境优先使用该链接播放音乐"',
 			'created_at' => Schema::TYPE_INTEGER . ' not null comment "创建时间"',
 			'updated_at' => Schema::TYPE_INTEGER . ' not null comment "更新时间"',
 		], $tableOptions . ' comment="公众号消息回复规则"');
