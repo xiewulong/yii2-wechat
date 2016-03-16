@@ -708,16 +708,17 @@ class Manager {
 			'group' => ['name' => $name],
 		]));
 
-		$group = null;
 		if(isset($data['group'])) {
 			$group = new WechatUserGroup;
 			$group->appid = $this->app->appid;
 			$group->gid = $data['group']['id'];
 			$group->name = $data['group']['name'];
-			$group->save();
+			if($group->save()) {
+				return $group->id;
+			}
 		}
 
-		return $group;
+		return 0;
 	}
 
 	/**
