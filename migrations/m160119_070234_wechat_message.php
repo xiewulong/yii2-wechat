@@ -11,7 +11,7 @@ class m160119_070234_wechat_message extends \yii\db\Migration {
 		}
 
 		$this->createTable('{{%wechat_message}}', [
-			'id' => Schema::TYPE_BIGINT . ' not null primary key auto_increment comment "id"',
+			'id' => Schema::TYPE_BIGINT . ' primary key auto_increment comment "id"',
 			'appid' => Schema::TYPE_STRING . '(50) not null comment "应用id"',
 			'type' => Schema::TYPE_BOOLEAN . ' not null default 1 comment "类型: 1接收, 2发送"',
 			'pid' => Schema::TYPE_BIGINT . ' not null default 0 comment "父id, 即回复的消息id"',
