@@ -266,10 +266,7 @@ class Module extends \yii\base\Module {
 				break;
 		}
 
-		//debug
-		//$message->content = json_encode($postObj);
-
-		return $message->save() ? $message->getReply($this->messageClass) : null;
+		return $message->save() ? $message->autoReply($this->messageClass) : null;
 	}
 
 	/**
