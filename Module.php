@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2016/1/21
- * update: 2016/2/26
+ * update: 2016/3/17
  * version: 0.0.1
  */
 
@@ -59,7 +59,7 @@ class Module extends \yii\base\Module {
 	 * @example $this->checkSignature($signature, $timestamp, $nonce);
 	 */
 	public function checkSignature($signature, $timestamp, $nonce) {
-		return \Yii::$app->security->compareString($this->sign([$this->manager->wechat->token, $timestamp, $nonce]), $signature);
+		return \Yii::$app->security->compareString($this->sign([$this->manager->app->token, $timestamp, $nonce]), $signature);
 	}
 
 	/**
@@ -73,7 +73,7 @@ class Module extends \yii\base\Module {
 	 * @return {boolean}
 	 */
 	private function checkMsgSignature($msg_signature, $timestamp, $nonce, $encrypt) {
-		return \Yii::$app->security->compareString($this->sign([$this->manager->wechat->token, $timestamp, $nonce, $encrypt]), $msg_signature);
+		return \Yii::$app->security->compareString($this->sign([$this->manager->app->token, $timestamp, $nonce, $encrypt]), $msg_signature);
 	}
 
 	/**
@@ -100,7 +100,7 @@ class Module extends \yii\base\Module {
 	 * @return {string|boolean}
 	 */
 	private function decrypt($encrypted) {
-		$this->key = base64_decode($this->manager->wechat->aeskey . '=');
+		$this->key = base64_decode($this->manager->app->aeskey . '=');
 
 		//使用BASE64对需要解密的字符串进行解码
 		$ciphertext_dec = base64_decode($encrypted);
@@ -127,7 +127,7 @@ class Module extends \yii\base\Module {
 		$xml_content = substr($content, 4, $xml_len);
 		$from_appid = substr($content, $xml_len + 4);
 
-		return $from_appid == $this->manager->wechat->appid ? $xml_content : false;
+		return $from_appid == $this->manager->app->appid ? $xml_content : false;
 	}
 
 	/**
@@ -160,12 +160,12 @@ class Module extends \yii\base\Module {
 	 * @example $this->handleMessage($postObj);
 	 */
 	public function handleMessage($postObj) {
-		if((isset($postObj['MsgId']) && WechatMessage::findOne(['msg_id' => $postObj['MsgId']])) || WechatMessage::findOne(['appid' => $this->manager->wechat->appid, 'to_user_name' => $postObj['ToUserName'], 'from_user_name' => $postObj['FromUserName'], 'create_time' => $postObj['CreateTime']])) {
+		if((isset($postObj['MsgId']) && WechatMessage::findOne(['msg_id' => $postObj['MsgId']])) || WechatMessage::findOne(['appid' => $this->manager->app->appid, 'to_user_name' => $postObj['ToUserName'], 'from_user_name' => $postObj['FromUserName'], 'create_time' => $postObj['CreateTime']])) {
 			return null;
 		}
 
 		$message = new WechatMessage;
-		$message->appid = $this->manager->wechat->appid;
+		$message->appid = $this->manager->app->appid;
 		$message->to_user_name = $postObj['ToUserName'];
 		$message->from_user_name = $postObj['FromUserName'];
 		$message->create_time = $postObj['CreateTime'];
@@ -308,12 +308,12 @@ class Module extends \yii\base\Module {
 	 */
 	private function encrypt($text) {
 		if(!$this->key) {
-			$this->key = base64_decode($this->manager->wechat->aeskey . '=');
+			$this->key = base64_decode($this->manager->app->aeskey . '=');
 		}
 
 		//获得16位随机字符串，填充到明文之前
 		$random = $this->manager->generateRandomString(16);
-		$text = $random . pack("N", strlen($text)) . $text . $this->manager->wechat->appid;
+		$text = $random . pack("N", strlen($text)) . $text . $this->manager->app->appid;
 
 		//网络字节序
 		$size = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
@@ -348,7 +348,7 @@ class Module extends \yii\base\Module {
 
 		return [
 			'Encrypt' => $encrypt,
-			'MsgSignature' => $this->sign([$this->manager->wechat->token, $timestamp, $nonce, $encrypt]),
+			'MsgSignature' => $this->sign([$this->manager->app->token, $timestamp, $nonce, $encrypt]),
 			'TimeStamp' => $timestamp,
 			'Nonce' => $nonce,
 		];
