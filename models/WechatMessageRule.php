@@ -5,6 +5,7 @@ namespace yii\wechat\models;
 use Yii;
 use yii\db\ActiveRecord;
 use yii\behaviors\TimestampBehavior;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
 
 class WechatMessageRule extends ActiveRecord {
@@ -29,7 +30,24 @@ class WechatMessageRule extends ActiveRecord {
 	 * @example static::keywords($appid, $content);
 	 */
 	public static function keywords($appid, $content) {
-		$rule = static::findOne(['appid' => $appid, 'type' => 'beadded']);
+		$keyword = WechatMessageKeyword::find()->where("appid = '$appid' and mode = 1 and keyword = '" . addslashes($content) . "'")->orderBy('rand()')->one();
+		if(!$keyword) {
+			$keywords = [];
+			foreach(ArrayHelper::getColumn(WechatMessageKeyword::find()->where("appid = '$appid' and mode = 0")->select('keyword')->asArray()->all(), 'keyword') as $_keyword) {
+				$keywords[] = addcslashes($_keyword, "\|/<>()[]{}^$?*+.");
+			}
+			if($keywords) {
+				$keywords = implode('|', $keywords); 
+				preg_match_all("/$keywords/i", $content, $matches);
+				$matches = array_unique($matches[0]);
+				foreach($matches as $index => $match) {
+					$matches[$index] = addslashes($match);
+				}
+				$keyword = WechatMessageKeyword::find()->where("appid = '$appid' and mode = 0 and keyword in ('" . implode("','", $matches) . "')")->orderBy('rand()')->one();
+			}
+		}
+
+		$rule = $keyword ? $keyword->rule : static::findOne(['appid' => $appid, 'type' => 'autoreply']);
 
 		return $rule ? $rule->messageFormat : [];
 	}

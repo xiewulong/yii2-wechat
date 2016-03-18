@@ -105,7 +105,7 @@ class WechatMessage extends ActiveRecord {
 				$reply['Music'] = [
 					'Title' => $this->title,
 					'Description' => $this->description,
-					'MusicURL' => $this->music_url,
+					'MusicUrl' => $this->music_url,
 					'HQMusicUrl' => $this->hq_music_url,
 					'ThumbMediaId' => $this->thumb_media_id,
 				];

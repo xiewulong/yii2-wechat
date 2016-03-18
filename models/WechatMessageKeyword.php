@@ -18,4 +18,15 @@ class WechatMessageKeyword extends ActiveRecord {
 		];
 	}
 
+	/**
+	 * 获取消息回复规则
+	 * @method getRule
+	 * @since 0.0.1
+	 * @return {object}
+	 * @example $this->getRule();
+	 */
+	public function getRule() {
+		return $this->hasOne(WechatMessageRule::classname(), ['id' => 'rule_id']);
+	}
+
 }
