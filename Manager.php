@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/3/16
+ * update: 2016/5/30
  * version: 0.0.1
  */
 
@@ -996,11 +996,10 @@ class Manager {
 		
 		return [
 			'appId' => $this->app->appid,
-			'verifyAppId' => $this->app->appid,
-			'verifySignType' => 'sha1',
-			'verifyTimestamp' => $params['timestamp'],
-			'verifyNonceStr' => $params['noncestr'],
-			'verifySignature' => $this->sign($params),
+			'timestamp' => $params['timestamp'],
+			'nonceStr' => $params['noncestr'],
+			'signature' => $this->sign($params),
+			'signType' => 'sha1',
 		];
 	}
 
