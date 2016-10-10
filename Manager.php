@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/5/30
+ * update: 2016/10/10
  * version: 0.0.1
  */
 
@@ -823,7 +823,7 @@ class Manager {
 		if($result) {
 			$user->subscribe = $data['subscribe'];
 			if($user->subscribe == 1) {
-				$user->subscribe_time = $data['subscribe_time'];
+				$user->subscribed_at = $data['subscribed_at'];
 				$user->nickname = $data['nickname'];
 				$user->sex = $data['sex'];
 				$user->country = $data['country'];
@@ -887,7 +887,7 @@ class Manager {
 					}
 					$user->subscribe = $_user['subscribe'];
 					if($user->subscribe == 1) {
-						$user->subscribe_time = $_user['subscribe_time'];
+						$user->subscribed_at = $_user['subscribed_at'];
 						$user->nickname = urlencode($_user['nickname']);
 						$user->sex = $_user['sex'];
 						$user->country = $_user['country'];
@@ -974,7 +974,7 @@ class Manager {
 			$this->app->ip_list = Json::encode($data['ip_list']);
 			return $this->app->save();
 		}
-		
+
 		return $this->errcode == 0;
 	}
 
@@ -993,7 +993,7 @@ class Manager {
 			'timestamp' => strval(time()),
 			'url' => $url ? : \Yii::$app->request->absoluteUrl,
 		];
-		
+
 		return [
 			'appId' => $this->app->appid,
 			'timestamp' => $params['timestamp'],
@@ -1066,7 +1066,7 @@ class Manager {
 			'grant_type' => 'refresh_token',
 			'refresh_token' => $refresh_token,
 		]);
-		
+
 		return $this->errcode == 0 ? $data : [];
 	}
 
@@ -1100,7 +1100,7 @@ class Manager {
 				}
 			}
 		}
-		
+
 		return $user;
 	}
 
@@ -1146,7 +1146,7 @@ class Manager {
 	public function generateRandomString($len = 32) {
 		$chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 		$max = strlen($chars) - 1;
-		
+
 		$strArr = [];
 		for($i = 0; $i < $len; $i++) {
 			$strArr[] = $chars[mt_rand(0, $max)];
