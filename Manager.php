@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/10/10
+ * update: 2016/10/13
  * version: 0.0.1
  */
 
@@ -13,6 +13,7 @@ namespace yii\wechat;
 
 use Yii;
 use yii\base\ErrorException;
+use yii\base\Object;
 use yii\data\Pagination;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
@@ -26,13 +27,13 @@ use yii\wechat\models\WechatNews;
 use yii\wechat\models\WechatNewsMedia;
 use yii\wechat\models\WechatNewsImage;
 
-class Manager {
+class Manager extends Object {
 
 	//微信接口网关
 	private $api = 'https://api.weixin.qq.com';
 
 	//公众号
-	public $app;
+	private $_app;
 
 	//提示信息
 	private $messages = false;
@@ -50,19 +51,25 @@ class Manager {
 	private $effectiveTimeOfTemporaryMaterial = 259200;
 
 	/**
-	 * 设置全局公众号
-	 * @method setApp
+	 * Return app model
+	 *
 	 * @since 0.0.1
-	 * @param {string} $appid AppID
 	 * @return {object}
-	 * @example \Yii::$app->wechat->setApp($appid);
 	 */
-	public function setApp($appid) {
-		if(!$this->app = Wechat::findOne($appid)) {
+	public function getApp() {
+		return $this->_app;
+	}
+
+	/**
+	 * Set app model
+	 *
+	 * @since 0.0.1
+	 * @param {string} $value app id
+	 */
+	public function setApp($value) {
+		if(!$this->_app = Wechat::findOne($value)) {
 			throw new ErrorException('Without the wechat app');
 		}
-
-		return $this;
 	}
 
 	/**
@@ -823,8 +830,8 @@ class Manager {
 		if($result) {
 			$user->subscribe = $data['subscribe'];
 			if($user->subscribe == 1) {
-				$user->subscribed_at = $data['subscribed_at'];
-				$user->nickname = $data['nickname'];
+				$user->subscribed_at = $data['subscribe_time'];
+				$user->name = $data['nickname'];
 				$user->sex = $data['sex'];
 				$user->country = $data['country'];
 				$user->city = $data['city'];
@@ -888,7 +895,7 @@ class Manager {
 					$user->subscribe = $_user['subscribe'];
 					if($user->subscribe == 1) {
 						$user->subscribed_at = $_user['subscribed_at'];
-						$user->nickname = urlencode($_user['nickname']);
+						$user->name = $_user['nickname'];
 						$user->sex = $_user['sex'];
 						$user->country = $_user['country'];
 						$user->city = $_user['city'];
@@ -1078,7 +1085,7 @@ class Manager {
 	 * @return {array}
 	 * @example \Yii::$app->wechat->getUserInfo($code);
 	 */
-	public function getUserInfo($code) {
+	public function getUserInfoByCode($code) {
 		$data = $this->getData('/sns/oauth2/access_token', [
 			'appid' => $this->app->appid,
 			'secret' => $this->app->secret,
