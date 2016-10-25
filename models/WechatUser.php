@@ -48,6 +48,22 @@ class WechatUser extends ActiveRecord {
 	}
 
 	/**
+	 * Return head image url of size
+	 *
+	 * @since 0.0.1
+	 * @param {int} $size 0(640*640 default), 46, 64, 96, 132
+	 * @return {string}
+	 */
+	public function getHeadImageUrl($size = 0) {
+		$headimgurl = $this->headimgurl;
+		if($headimgurl && in_array($size, [46, 64, 96, 132])) {
+			$headimgurl = preg_replace('/\/0$/', '/' . $size, $headimgurl);
+		}
+
+		return $headimgurl;
+	}
+
+	/**
 	 * Return group
 	 *
 	 * @since 0.0.1
