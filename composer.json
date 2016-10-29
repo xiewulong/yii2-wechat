@@ -14,11 +14,11 @@
 			"name": "xiewulong",
 			"email": "xiewulong@vip.qq.com"
 		}
-    ],
-    "require": {
-        "yiisoft/yii2": "*",
-        "xiewulong/yii2-fileupload": "*"
-    },
+	],
+	"require": {
+		"yiisoft/yii2": "*",
+		"xiewulong/yii2-fileupload": "*"
+	},
 	"autoload": {
 		"psr-4": {"yii\\wechat\\": ""}
 	}
