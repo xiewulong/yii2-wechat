@@ -84,7 +84,7 @@ class Manager extends Object {
 	 * @example \Yii::$app->wechat->sendTemplate($touser, $template_id, $data, $url);
 	 */
 	public function sendTemplate($touser, $template_id, $data, $url = null) {
-		$data = $this->getData('/cgi-bin/template/del_private_template', [
+		$data = $this->getData('/cgi-bin/message/template/send', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'touser' => $touser,
@@ -92,6 +92,8 @@ class Manager extends Object {
 			'url' => $url,
 			'data' => $data,
 		]));
+
+		print_r($data);
 
 		return $this->errcode == 0;
 	}
