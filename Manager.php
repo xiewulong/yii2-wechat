@@ -93,8 +93,6 @@ class Manager extends Object {
 			'data' => $data,
 		]));
 
-		print_r($data);
-
 		return $this->errcode == 0;
 	}
 
