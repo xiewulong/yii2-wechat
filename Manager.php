@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/10/13
+ * update: 2016/11/11
  * version: 0.0.1
  */
 
@@ -17,15 +17,16 @@ use yii\base\Object;
 use yii\data\Pagination;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
+
 use yii\wechat\models\Wechat;
-use yii\wechat\models\WechatUser;
-use yii\wechat\models\WechatUserGroup;
-use yii\wechat\models\WechatMenu;
 use yii\wechat\models\WechatMaterial;
 use yii\wechat\models\WechatMaterialMedia;
+use yii\wechat\models\WechatMenu;
 use yii\wechat\models\WechatNews;
-use yii\wechat\models\WechatNewsMedia;
 use yii\wechat\models\WechatNewsImage;
+use yii\wechat\models\WechatNewsMedia;
+use yii\wechat\models\WechatUser;
+use yii\wechat\models\WechatUserGroup;
 
 class Manager extends Object {
 
@@ -51,7 +52,7 @@ class Manager extends Object {
 	private $effectiveTimeOfTemporaryMaterial = 259200;
 
 	/**
-	 * Return app model
+	 * Returns app model
 	 *
 	 * @since 0.0.1
 	 * @return {object}
@@ -73,8 +74,124 @@ class Manager extends Object {
 	}
 
 	/**
+	 * Send template
+	 *
+	 * @since 0.0.1
+	 * @param {string} $touser user's openid
+	 * @param {string} $template_id
+	 * @param {array} $data
+	 * @param {string} [$url]
+	 * @example \Yii::$app->wechat->sendTemplate($touser, $template_id, $data, $url);
+	 */
+	public function sendTemplate($touser, $template_id, $data, $url = null) {
+		$data = $this->getData('/cgi-bin/template/del_private_template', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'touser' => $touser,
+			'template_id' => $template_id,
+			'url' => $url,
+			'data' => $data,
+		]));
+
+		return $this->errcode == 0;
+	}
+
+	/**
+	 * Delete template
+	 *
+	 * @since 0.0.1
+	 * @param {string} $template_id
+	 * @example \Yii::$app->wechat->deleteTemplate($template_id);
+	 */
+	public function deleteTemplate($template_id) {
+		$data = $this->getData('/cgi-bin/template/del_private_template', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'template_id' => $template_id,
+		]));
+
+		return $this->errcode == 0;
+	}
+
+	/**
+	 * Add template
+	 *
+	 * @since 0.0.1
+	 * @param {string} $template_id_short
+	 * @example \Yii::$app->wechat->addTemplate($template_id_short);
+	 */
+	public function addTemplate($template_id_short) {
+		$data = $this->getData('/cgi-bin/template/api_add_template', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'template_id_short' => $template_id_short,
+		]));
+
+		if($this->errcode == 0) {
+			return $data['template_id'];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get all template
+	 *
+	 * @since 0.0.1
+	 * @example \Yii::$app->wechat->getAllTemplate();
+	 */
+	public function getAllTemplate() {
+		$data = $this->getData('/cgi-bin/template/get_all_private_template', [
+			'access_token' => $this->getAccessToken(),
+		]);
+
+		if($this->errcode == 0) {
+			return $data['template_list'];
+		}
+
+		return [];
+	}
+
+	/**
+	 * Get template industry
+	 *
+	 * @since 0.0.1
+	 * @example \Yii::$app->wechat->getTemplateIndustry();
+	 */
+	public function getTemplateIndustry() {
+		$data = $this->getData('/cgi-bin/template/get_industry', [
+			'access_token' => $this->getAccessToken(),
+		]);
+
+		if($this->errcode == 0) {
+			return $data;
+		}
+
+		return [];
+	}
+
+	/**
+	 * Set template industry
+	 *
+	 * @since 0.0.1
+	 * @param {integer} $industry_id1 primary
+	 * @param {integer} $industry_id2 secondary
+	 * @example \Yii::$app->wechat->setTemplateIndustry($industry_id1, $industry_id2);
+	 */
+	public function setTemplateIndustry($industry_id1, $industry_id2) {
+		$data = $this->getData('/cgi-bin/template/api_set_industry', [
+			'access_token' => $this->getAccessToken(),
+		], Json::encode([
+			'industry_id1' => $industry_id1,
+			'industry_id2' => $industry_id2,
+		]));
+
+		return $this->errcode == 0;
+	}
+
+	/**
 	 * 上传图文消息内的图片
-	 * @method addNewsImage
+	 *
 	 * @since 0.0.1
 	 * @param {string} $url_source 源url(非微信端)
 	 * @return {int}
@@ -106,7 +223,7 @@ class Manager extends Object {
 
 	/**
 	 * 删除图文消息
-	 * @method deleteNews
+	 *
 	 * @since 0.0.1
 	 * @param {int} $news_media_id 图文消息id
 	 * @return {boolean}
@@ -123,7 +240,7 @@ class Manager extends Object {
 
 	/**
 	 * 修改图文消息
-	 * @method updateNews
+	 *
 	 * @since 0.0.1
 	 * @param {int} $news_media_id 图文消息id
 	 * @return {int}
@@ -175,7 +292,7 @@ class Manager extends Object {
 
 	/**
 	 * 新增图文消息
-	 * @method addNews
+	 *
 	 * @since 0.0.1
 	 * @param {int} $news_id 图文素材id
 	 * @return {int}
@@ -214,7 +331,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取图文消息
-	 * @method getNews
+	 *
 	 * @since 0.0.1
 	 * @param {string} [$media_id] 媒体文件ID
 	 * @param {boolean} [$all=true] 是否返回所有
@@ -229,7 +346,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取素材总数
-	 * @method getMaterialCount
+	 *
 	 * @since 0.0.1
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->getMaterialCount();
@@ -252,7 +369,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取素材列表
-	 * @method getMaterials
+	 *
 	 * @since 0.0.1
 	 * @param {string} $type 素材的类型
 	 * @param {boolean} [$all=true] 是否返回所有
@@ -287,7 +404,7 @@ class Manager extends Object {
 
 	/**
 	 * 删除永久素材
-	 * @method deleteMaterial
+	 *
 	 * @since 0.0.1
 	 * @param {string} $media_id 媒体文件ID
 	 * @return {boolean}
@@ -303,7 +420,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取永久素材
-	 * @method getMaterial
+	 *
 	 * @since 0.0.1
 	 * @param {string} $media_id 媒体文件ID
 	 * @return {string|array|null}
@@ -319,7 +436,7 @@ class Manager extends Object {
 
 	/**
 	 * 新增永久素材
-	 * @method addMaterial
+	 *
 	 * @since 0.0.1
 	 * @param {int} $material_id 素材id
 	 * @return {int}
@@ -368,7 +485,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取临时素材
-	 * @method getMedia
+	 *
 	 * @since 0.0.1
 	 * @param {string} $media_id 媒体文件ID
 	 * @return {string|null}
@@ -385,7 +502,7 @@ class Manager extends Object {
 
 	/**
 	 * 新增临时素材
-	 * @method addMedia
+	 *
 	 * @since 0.0.1
 	 * @param {int} $material_id 素材id
 	 * @return {int}
@@ -419,7 +536,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取公众号的菜单配置
-	 * @method getCurrentMenu
+	 *
 	 * @since 0.0.1
 	 * @return {array}
 	 * @example \Yii::$app->wechat->getCurrentMenu();
@@ -434,7 +551,7 @@ class Manager extends Object {
 
 	/**
 	 * 测试个性化菜单匹配结果
-	 * @method tryMatchMenu
+	 *
 	 * @since 0.0.1
 	 * @param {string} $openid OpenID或微信号
 	 * @return {array}
@@ -450,7 +567,7 @@ class Manager extends Object {
 
 	/**
 	 * 删除个性化菜单
-	 * @method deleteConditionalMenu
+	 *
 	 * @since 0.0.1
 	 * @param {int} $menuid 菜单id
 	 * @return {boolean}
@@ -466,7 +583,7 @@ class Manager extends Object {
 
 	/**
 	 * 删除自定义(个性化)菜单
-	 * @method deleteMenu
+	 *
 	 * @since 0.0.1
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->deleteMenu();
@@ -496,7 +613,7 @@ class Manager extends Object {
 
 	/**
 	 * 创建自定义(个性化)菜单
-	 * @method createMenu
+	 *
 	 * @since 0.0.1
 	 * @param {array} $button 菜单数据
 	 * @param {array} [$matchrule] 个性化菜单匹配规则
@@ -522,7 +639,7 @@ class Manager extends Object {
 
 	/**
 	 * 刷新自定义(个性化)菜单
-	 * @method refreshMenu
+	 *
 	 * @since 0.0.1
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->refreshMenu();
@@ -546,7 +663,7 @@ class Manager extends Object {
 
 	/**
 	 * 查询自定义(个性化)菜单
-	 * @method getMenu
+	 *
 	 * @since 0.0.1
 	 * @return {array}
 	 * @example \Yii::$app->wechat->getMenu();
@@ -561,7 +678,7 @@ class Manager extends Object {
 
 	/**
 	 * 批量移动用户分组
-	 * @method updateGroupUsers
+	 *
 	 * @since 0.0.1
 	 * @param {string|array} $uids 用户id
 	 * @param {int} $gid 用户分组gid
@@ -606,7 +723,7 @@ class Manager extends Object {
 
 	/**
 	 * 移动用户分组
-	 * @method updateGroupUser
+	 *
 	 * @since 0.0.1
 	 * @param {int} $uid 用户id
 	 * @param {int} $gid 用户分组gid
@@ -644,7 +761,7 @@ class Manager extends Object {
 
 	/**
 	 * 删除用户分组
-	 * @method deleteGroup
+	 *
 	 * @since 0.0.1
 	 * @param {int} $gid 用户分组id
 	 * @param {string} [$name] 用户分组名字, 30个字符以内, 默认直接取数据库中的值
@@ -672,7 +789,7 @@ class Manager extends Object {
 
 	/**
 	 * 修改用户分组名
-	 * @method updateGroup
+	 *
 	 * @since 0.0.1
 	 * @param {int} $gid 用户分组id
 	 * @param {string} [$name] 分组名字, 30个字符以内, 默认直接取数据库中的值
@@ -702,7 +819,7 @@ class Manager extends Object {
 
 	/**
 	 * 创建用户分组
-	 * @method createGroup
+	 *
 	 * @since 0.0.1
 	 * @param {string} $name 用户分组名字, 30个字符以内
 	 * @return {object}
@@ -730,7 +847,7 @@ class Manager extends Object {
 
 	/**
 	 * 查询所有用户分组
-	 * @method getGroups
+	 *
 	 * @since 0.0.1
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->getGroups();
@@ -759,7 +876,7 @@ class Manager extends Object {
 
 	/**
 	 * 查询用户所在分组
-	 * @method getUserGroup
+	 *
 	 * @since 0.0.1
 	 * @param {string} $openid OpenID
 	 * @return {int}
@@ -777,7 +894,7 @@ class Manager extends Object {
 
 	/**
 	 * 设置用户备注名
-	 * @method updateUserRemark
+	 *
 	 * @since 0.0.1
 	 * @param {int} $uid 用户id
 	 * @param {string} [$remark] 备注名, 长度必须小于30字符, 默认直接取数据库中的值
@@ -808,7 +925,7 @@ class Manager extends Object {
 
 	/**
 	 * 刷新用户基本信息
-	 * @method refreshUser
+	 *
 	 * @since 0.0.1
 	 * @param {int} $uid 用户id
 	 * @return {boolean}
@@ -852,7 +969,7 @@ class Manager extends Object {
 
 	/**
 	 * 刷新所有用户基本信息
-	 * @method refreshUsers
+	 *
 	 * @since 0.0.1
 	 * @param {int} [$page=1] 页码
 	 * @return {boolean}
@@ -918,7 +1035,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取用户列表
-	 * @method getUsers
+	 *
 	 * @since 0.0.1
 	 * @param {string} [$next_openid] 第一个拉取的OPENID, 不填默认从头开始拉取
 	 * @return {boolean}
@@ -952,7 +1069,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取微信服务器IP地址
-	 * @method getCallbackIp
+	 *
 	 * @since 0.0.1
 	 * @return {array}
 	 * @example \Yii::$app->wechat->getCallbackIp();
@@ -967,7 +1084,7 @@ class Manager extends Object {
 
 	/**
 	 * 刷新微信服务器IP地址
-	 * @method refreshIpList
+	 *
 	 * @since 0.0.1
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->refreshIpList();
@@ -987,7 +1104,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取js接口调用配置
-	 * @method getJsapiConfig
+	 *
 	 * @since 0.0.1
 	 * @param {string} [$url] 调用js接口页面url
 	 * @return {array}
@@ -1012,7 +1129,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取js接口调用票据
-	 * @method getJsapiTicket
+	 *
 	 * @since 0.0.1
 	 * @return {string}
 	 * @example \Yii::$app->wechat->getJsapiTicket();
@@ -1036,7 +1153,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取接口调用凭据
-	 * @method getAccessToken
+	 *
 	 * @since 0.0.1
 	 * @return {string}
 	 * @example \Yii::$app->wechat->getAccessToken();
@@ -1061,7 +1178,7 @@ class Manager extends Object {
 
 	/**
 	 * 刷新用户网页授权接口调用凭据
-	 * @method refreshUserAccessToken
+	 *
 	 * @since 0.0.1
 	 * @param {string} $refresh_token access_token刷新token
 	 * @return {array}
@@ -1079,7 +1196,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取用户网页授权信息
-	 * @method getUserInfo
+	 *
 	 * @since 0.0.1
 	 * @param {string} $code 通过用户在网页授权后获取的code参数
 	 * @return {array}
@@ -1113,7 +1230,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取用户网页授权code跳转url
-	 * @method getUserAuthorizeCodeUrl
+	 *
 	 * @since 0.0.1
 	 * @param {string} [$state] 重定向后会带上state参数, 开发者可以填写a-zA-Z0-9的参数值, 最多128字节
 	 * @param {string} [$scope=snsapi_base] 应用授权作用域: snsapi_base(默认), snsapi_userinfo
@@ -1133,7 +1250,7 @@ class Manager extends Object {
 
 	/**
 	 * 生成随机令牌
-	 * @method generateToken
+	 *
 	 * @since 0.0.1
 	 * @return {string}
 	 * @example \Yii::$app->wechat->generateToken();
@@ -1144,7 +1261,7 @@ class Manager extends Object {
 
 	/**
 	 * 生成随机字符串
-	 * @method generateRandomString
+	 *
 	 * @since 0.0.1
 	 * @param {int} [$len=32] 长度
 	 * @return {string}
@@ -1164,7 +1281,7 @@ class Manager extends Object {
 
 	/**
 	 * 签名
-	 * @method sign
+	 *
 	 * @since 0.0.1
 	 * @param {array} $arr 数据数组
 	 * @return {string}
@@ -1177,7 +1294,7 @@ class Manager extends Object {
 
 	/**
 	 * 保存文件
-	 * @method saveFile
+	 *
 	 * @since 0.0.1
 	 * @param {array} $data 数据
 	 * @return {string}
@@ -1194,7 +1311,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取数据
-	 * @method getData
+	 *
 	 * @since 0.0.1
 	 * @param {string} $action 接口名称
 	 * @param {array} $query 参数
@@ -1227,7 +1344,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取文件扩展名
-	 * @method getExtension
+	 *
 	 * @since 0.0.1
 	 * @param {string} $mimetype 文件MIME type
 	 * @return {string}
@@ -1249,7 +1366,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取文件MIME type
-	 * @method getExtension
+	 *
 	 * @since 0.0.1
 	 * @param {string} $data 数据
 	 * @param {boolean} $stream 数据流形式
@@ -1265,7 +1382,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取接口完整访问地址
-	 * @method getApiUrl
+	 *
 	 * @since 0.0.1
 	 * @param {string} $action 接口名称
 	 * @param {array} [$query=[]] 参数
@@ -1277,7 +1394,7 @@ class Manager extends Object {
 
 	/**
 	 * 获取信息
-	 * @method getMessage
+	 *
 	 * @since 0.0.1
 	 * @param {string} $status 状态码
 	 * @return {string}
@@ -1292,7 +1409,7 @@ class Manager extends Object {
 
 	/**
 	 * curl远程获取数据方法
-	 * @method curl
+	 *
 	 * @since 0.0.1
 	 * @param {string} $url 请求地址
 	 * @param {string|array} [$data] post数据

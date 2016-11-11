@@ -200,7 +200,7 @@ class m161010_051207_wechat_init extends Migration {
 		$this->addCommentOnTable('{{%wechat_menu}}', \Yii::t($this->messageCategory, 'wechat menu'));
 
 		$this->createTable('{{%wechat_message}}', [
-			'id' => $this->bigInteger()->comment(\Yii::t($this->messageCategory, 'id')),
+			'id' => $this->bigPrimaryKey()->comment(\Yii::t($this->messageCategory, 'id')),
 			'appid' => $this->string(68)->notNull()->comment(\Yii::t($this->messageCategory, 'app id')),
 			'type' => $this->boolean()->notNull()->defaultValue(1)->comment(\Yii::t($this->messageCategory, 'type')),
 			'pid' => $this->bigInteger()->notNull()->comment(\Yii::t($this->messageCategory, 'parent id')),
@@ -214,7 +214,7 @@ class m161010_051207_wechat_init extends Migration {
 			'thumb_media_id' => $this->string()->comment(\Yii::t($this->messageCategory, 'thumbnail media id')),
 			'thumb_media_url' => $this->text()->comment(\Yii::t($this->messageCategory, 'thumbnail media url')),
 			'event' => $this->string(68)->comment(\Yii::t($this->messageCategory, 'event type')),
-			'event' => $this->string()->comment(\Yii::t($this->messageCategory, 'event key')),
+			'event_key' => $this->string()->comment(\Yii::t($this->messageCategory, 'event key')),
 			'content' => $this->text()->comment(\Yii::t($this->messageCategory, 'content')),
 			'pic_url' => $this->text()->comment(\Yii::t($this->messageCategory, 'picture url')),
 			'format' => $this->string(68)->comment(\Yii::t($this->messageCategory, 'voice format')),
@@ -242,7 +242,6 @@ class m161010_051207_wechat_init extends Migration {
 			'created_at' => $this->integer()->notNull()->comment(\Yii::t($this->messageCategory, 'created time')),
 			'updated_at' => $this->integer()->notNull()->comment(\Yii::t($this->messageCategory, 'updated time')),
 		], $tableOptions);
-		$this->addPrimaryKey('id', '{{%wechat_message}}', 'id');
 		$this->createIndex('appid', '{{%wechat_message}}', 'appid');
 		$this->createIndex('type', '{{%wechat_message}}', 'type');
 		$this->createIndex('pid', '{{%wechat_message}}', 'pid');

@@ -24,7 +24,7 @@ class ApiController extends Controller {
 			],
 		];
 	}
-	
+
 	public function actionPublic($appid, $echostr = null, $signature = null, $timestamp = null, $nonce = null, $encrypt_type = null, $msg_signature = null) {
 		$this->module->manager->setApp($appid);
 
@@ -39,13 +39,13 @@ class ApiController extends Controller {
 		}
 
 		//过滤非消息请求
-		if(!isset($GLOBALS["HTTP_RAW_POST_DATA"])) {
+		if(!$postStr = file_get_contents('php://input')) {
 			throw new NotFoundHttpException(\Yii::t('common', 'Page not found.'));
 		}
 
 		//获取数据
 		libxml_disable_entity_loader(true);
-		$postObj = (array) simplexml_load_string($GLOBALS["HTTP_RAW_POST_DATA"], 'SimpleXMLElement', LIBXML_NOCDATA);
+		$postObj = (array) simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
 
 		//确定是否开启安全模式
 		$safeMode = $encrypt_type && $msg_signature;

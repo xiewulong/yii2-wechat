@@ -174,7 +174,7 @@ class Module extends \yii\base\Module {
 		if(isset($postObj['MsgId'])) {
 			$message->msg_id = $postObj['MsgId'];
 		}
-		
+
 		switch($message->msg_type) {
 			case 'text':
 				$message->content = $postObj['Content'];
@@ -350,5 +350,5 @@ class Module extends \yii\base\Module {
 			'Nonce' => $nonce,
 		];
 	}
-	
+
 }
