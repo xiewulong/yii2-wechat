@@ -5,10 +5,9 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/11/11
+ * update: 2016/11/14
  * version: 0.0.1
  */
-
 namespace yii\wechat;
 
 use Yii;
@@ -38,6 +37,9 @@ class Manager extends Object {
 
 	//提示信息
 	private $messages = false;
+
+	//错误信息
+	public $templates = [];
 
 	//错误码
 	public $errcode = 0;
@@ -74,17 +76,33 @@ class Manager extends Object {
 	}
 
 	/**
+	 * Send template by type
+	 *
+	 * @since 0.0.1
+	 * @param {string} $touser openid
+	 * @param {string} $type
+	 * @param {array} $data
+	 * @param {string} [$url]
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->sendTemplateMessageByType($touser, $type, $data, $url);
+	 */
+	public function sendTemplateMessageByType($touser, $type, $data, $url = null) {
+		return isset($this->templates[$type]) && $this->sendTemplateMessage($touser, $this->templates[$type], $data, $url);
+	}
+
+	/**
 	 * Send template
 	 *
 	 * @since 0.0.1
-	 * @param {string} $touser user's openid
+	 * @param {string} $touser openid
 	 * @param {string} $template_id
 	 * @param {array} $data
 	 * @param {string} [$url]
-	 * @example \Yii::$app->wechat->sendTemplate($touser, $template_id, $data, $url);
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->sendTemplateMessage($touser, $template_id, $data, $url);
 	 */
-	public function sendTemplate($touser, $template_id, $data, $url = null) {
-		$data = $this->getData('/cgi-bin/message/template/send', [
+	public function sendTemplateMessage($touser, $template_id, $data, $url = null) {
+		$this->getData('/cgi-bin/message/template/send', [
 			'access_token' => $this->getAccessToken(),
 		], Json::encode([
 			'touser' => $touser,
@@ -101,6 +119,7 @@ class Manager extends Object {
 	 *
 	 * @since 0.0.1
 	 * @param {string} $template_id
+	 * @return {boolean}
 	 * @example \Yii::$app->wechat->deleteTemplate($template_id);
 	 */
 	public function deleteTemplate($template_id) {
@@ -118,6 +137,7 @@ class Manager extends Object {
 	 *
 	 * @since 0.0.1
 	 * @param {string} $template_id_short
+	 * @return {string}
 	 * @example \Yii::$app->wechat->addTemplate($template_id_short);
 	 */
 	public function addTemplate($template_id_short) {
@@ -138,6 +158,7 @@ class Manager extends Object {
 	 * Get all template
 	 *
 	 * @since 0.0.1
+	 * @return {array}
 	 * @example \Yii::$app->wechat->getAllTemplate();
 	 */
 	public function getAllTemplate() {
@@ -156,6 +177,7 @@ class Manager extends Object {
 	 * Get template industry
 	 *
 	 * @since 0.0.1
+	 * @return {array}
 	 * @example \Yii::$app->wechat->getTemplateIndustry();
 	 */
 	public function getTemplateIndustry() {
@@ -176,6 +198,7 @@ class Manager extends Object {
 	 * @since 0.0.1
 	 * @param {integer} $industry_id1 primary
 	 * @param {integer} $industry_id2 secondary
+	 * @return {boolean}
 	 * @example \Yii::$app->wechat->setTemplateIndustry($industry_id1, $industry_id2);
 	 */
 	public function setTemplateIndustry($industry_id1, $industry_id2) {
@@ -194,7 +217,7 @@ class Manager extends Object {
 	 *
 	 * @since 0.0.1
 	 * @param {string} $url_source 源url(非微信端)
-	 * @return {int}
+	 * @return {integer}
 	 * @example \Yii::$app->wechat->addNewsImage($url_source);
 	 */
 	public function addNewsImage($url_source) {
@@ -225,7 +248,7 @@ class Manager extends Object {
 	 * 删除图文消息
 	 *
 	 * @since 0.0.1
-	 * @param {int} $news_media_id 图文消息id
+	 * @param {integer} $news_media_id 图文消息id
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->deleteNews($news_media_id);
 	 */
@@ -242,8 +265,8 @@ class Manager extends Object {
 	 * 修改图文消息
 	 *
 	 * @since 0.0.1
-	 * @param {int} $news_media_id 图文消息id
-	 * @return {int}
+	 * @param {integer} $news_media_id 图文消息id
+	 * @return {integer}
 	 * @example \Yii::$app->wechat->updateNews($news_media_id);
 	 */
 	public function updateNews($news_media_id) {
@@ -294,8 +317,8 @@ class Manager extends Object {
 	 * 新增图文消息
 	 *
 	 * @since 0.0.1
-	 * @param {int} $news_id 图文素材id
-	 * @return {int}
+	 * @param {integer} $news_id 图文素材id
+	 * @return {integer}
 	 * @example \Yii::$app->wechat->addNews($news_id);
 	 */
 	public function addNews($news_id) {
@@ -335,8 +358,8 @@ class Manager extends Object {
 	 * @since 0.0.1
 	 * @param {string} [$media_id] 媒体文件ID
 	 * @param {boolean} [$all=true] 是否返回所有
-	 * @param {int} [$page=1] 页码
-	 * @param {int} [$count=20] 每页数量
+	 * @param {integer} [$page=1] 页码
+	 * @param {integer} [$count=20] 每页数量
 	 * @return {array}
 	 * @example \Yii::$app->wechat->getNews($media_id, $all, $page, $count);
 	 */
@@ -373,8 +396,8 @@ class Manager extends Object {
 	 * @since 0.0.1
 	 * @param {string} $type 素材的类型
 	 * @param {boolean} [$all=true] 是否返回所有
-	 * @param {int} [$page=1] 页码
-	 * @param {int} [$count=20] 每页数量
+	 * @param {integer} [$page=1] 页码
+	 * @param {integer} [$count=20] 每页数量
 	 * @return {array}
 	 * @example \Yii::$app->wechat->getMaterials($type, $all, $page, $count);
 	 */
@@ -438,8 +461,8 @@ class Manager extends Object {
 	 * 新增永久素材
 	 *
 	 * @since 0.0.1
-	 * @param {int} $material_id 素材id
-	 * @return {int}
+	 * @param {integer} $material_id 素材id
+	 * @return {integer}
 	 * @example \Yii::$app->wechat->addMaterial($material_id);
 	 */
 	public function addMaterial($material_id) {
@@ -504,8 +527,8 @@ class Manager extends Object {
 	 * 新增临时素材
 	 *
 	 * @since 0.0.1
-	 * @param {int} $material_id 素材id
-	 * @return {int}
+	 * @param {integer} $material_id 素材id
+	 * @return {integer}
 	 * @example \Yii::$app->wechat->addMedia($material_id);
 	 */
 	public function addMedia($material_id) {
@@ -569,7 +592,7 @@ class Manager extends Object {
 	 * 删除个性化菜单
 	 *
 	 * @since 0.0.1
-	 * @param {int} $menuid 菜单id
+	 * @param {integer} $menuid 菜单id
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->deleteConditionalMenu($menuid);
 	 */
@@ -681,7 +704,7 @@ class Manager extends Object {
 	 *
 	 * @since 0.0.1
 	 * @param {string|array} $uids 用户id
-	 * @param {int} $gid 用户分组gid
+	 * @param {integer} $gid 用户分组gid
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->updateGroupUsers($uids, $gid);
 	 */
@@ -725,8 +748,8 @@ class Manager extends Object {
 	 * 移动用户分组
 	 *
 	 * @since 0.0.1
-	 * @param {int} $uid 用户id
-	 * @param {int} $gid 用户分组gid
+	 * @param {integer} $uid 用户id
+	 * @param {integer} $gid 用户分组gid
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->updateGroupUser($uid, $gid);
 	 */
@@ -763,7 +786,7 @@ class Manager extends Object {
 	 * 删除用户分组
 	 *
 	 * @since 0.0.1
-	 * @param {int} $gid 用户分组id
+	 * @param {integer} $gid 用户分组id
 	 * @param {string} [$name] 用户分组名字, 30个字符以内, 默认直接取数据库中的值
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->deleteGroup($gid, $name);
@@ -791,7 +814,7 @@ class Manager extends Object {
 	 * 修改用户分组名
 	 *
 	 * @since 0.0.1
-	 * @param {int} $gid 用户分组id
+	 * @param {integer} $gid 用户分组id
 	 * @param {string} [$name] 分组名字, 30个字符以内, 默认直接取数据库中的值
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->updateGroup($gid, $name);
@@ -879,7 +902,7 @@ class Manager extends Object {
 	 *
 	 * @since 0.0.1
 	 * @param {string} $openid OpenID
-	 * @return {int}
+	 * @return {integer}
 	 * @example \Yii::$app->wechat->getUserGroup($openid);
 	 */
 	public function getUserGroup($openid) {
@@ -896,7 +919,7 @@ class Manager extends Object {
 	 * 设置用户备注名
 	 *
 	 * @since 0.0.1
-	 * @param {int} $uid 用户id
+	 * @param {integer} $uid 用户id
 	 * @param {string} [$remark] 备注名, 长度必须小于30字符, 默认直接取数据库中的值
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->updateUserRemark($uid, $remark);
@@ -927,7 +950,7 @@ class Manager extends Object {
 	 * 刷新用户基本信息
 	 *
 	 * @since 0.0.1
-	 * @param {int} $uid 用户id
+	 * @param {integer} $uid 用户id
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->refreshUser($uid);
 	 */
@@ -971,7 +994,7 @@ class Manager extends Object {
 	 * 刷新所有用户基本信息
 	 *
 	 * @since 0.0.1
-	 * @param {int} [$page=1] 页码
+	 * @param {integer} [$page=1] 页码
 	 * @return {boolean}
 	 * @example \Yii::$app->wechat->refreshUsers($page);
 	 */
@@ -1263,7 +1286,7 @@ class Manager extends Object {
 	 * 生成随机字符串
 	 *
 	 * @since 0.0.1
-	 * @param {int} [$len=32] 长度
+	 * @param {integer} [$len=32] 长度
 	 * @return {string}
 	 * @example \Yii::$app->wechat->generateRandomString($len);
 	 */
