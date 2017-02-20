@@ -5,7 +5,7 @@
  * https://github.com/xiewulong/yii2-wechat
  * https://raw.githubusercontent.com/xiewulong/yii2-wechat/master/LICENSE
  * create: 2014/12/30
- * update: 2016/11/14
+ * update: 2017/01/22
  * version: 0.0.1
  */
 namespace yii\wechat;
@@ -60,6 +60,10 @@ class Manager extends Object {
 	 * @return {object}
 	 */
 	public function getApp() {
+		if(!$this->_app) {
+			throw new ErrorException('Please set app first');
+		}
+
 		return $this->_app;
 	}
 
@@ -71,7 +75,7 @@ class Manager extends Object {
 	 */
 	public function setApp($value) {
 		if(!$this->_app = Wechat::findOne($value)) {
-			throw new ErrorException('Without the wechat app');
+			throw new ErrorException('Without the wechat app: ' . $value);
 		}
 	}
 
@@ -1218,6 +1222,59 @@ class Manager extends Object {
 	}
 
 	/**
+	 * 保存用户
+	 *
+	 * @since 0.0.1
+	 * @param {string} $openid OpenID
+	 * @return {object}
+	 * @example \Yii::$app->wechat->findUser($openid);
+	 */
+	public function saveUser($userinfo) {
+		if(!isset($userinfo['openid'])) {
+			return null;
+		}
+
+		if($user = $this->findUser($userinfo['openid'])) {
+			return $user;
+		}
+
+		$user = new WechatUser;
+		$user->appid = $this->app->appid;
+		$user->openid = $userinfo['openid'];
+		$user->name = $userinfo['nickname'];
+		$user->sex = $userinfo['sex'];
+		$user->language = $userinfo['language'];
+		$user->city = $userinfo['city'];
+		$user->province = $userinfo['province'];
+		$user->country = $userinfo['country'];
+		$user->headimgurl = $userinfo['headimgurl'];
+		$user->privilegeList = $userinfo['privilege'];
+
+		if(!$user->save()) {
+			return null;
+		}
+
+		$this->refreshUser($user->id);
+
+		return $user;
+	}
+
+	/**
+	 * 获取用户
+	 *
+	 * @since 0.0.1
+	 * @param {string} $openid OpenID
+	 * @return {object}
+	 * @example \Yii::$app->wechat->findUser($openid);
+	 */
+	public function findUser($openid) {
+		return WechatUser::findOne([
+			'appid' => $this->app->appid,
+			'openid' => $openid,
+		]);
+	}
+
+	/**
 	 * 获取用户网页授权信息
 	 *
 	 * @since 0.0.1
@@ -1413,6 +1470,17 @@ class Manager extends Object {
 	 */
 	private function getApiUrl($action, $query = []) {
 		return $this->api . $action . (empty($query) ? '' : '?' . http_build_query($query));
+	}
+
+	/**
+	 * 是否通过内置浏览器中访问
+	 *
+	 * @since 0.0.1
+	 * @return {boolean}
+	 * @example \Yii::$app->wechat->getIsBuildInBrowser();
+	 */
+	public function getIsBuildInBrowser() {
+		return isset($_SERVER['HTTP_USER_AGENT']) && stripos($_SERVER['HTTP_USER_AGENT'], 'micromessenger') !== false;
 	}
 
 	/**

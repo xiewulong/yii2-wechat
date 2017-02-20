@@ -54,7 +54,7 @@ class WechatUser extends ActiveRecord {
 	 * @param {int} $size 0(640*640 default), 46, 64, 96, 132
 	 * @return {string}
 	 */
-	public function getHeadImageUrl($size = 0) {
+	public function getHeadImageUrl($size = 46) {
 		$headimgurl = $this->headimgurl;
 		if($headimgurl && in_array($size, [46, 64, 96, 132])) {
 			$headimgurl = preg_replace('/\/0$/', '/' . $size, $headimgurl);
